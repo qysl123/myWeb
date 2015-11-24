@@ -21,6 +21,5 @@ public class TestController {
     @ResponseBody
     void testHello(@RequestParam Map<String, Object> paramMap){
         testService.testHello();
-        System.out.println(11111111);
     }
 }

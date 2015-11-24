@@ -1,11 +1,13 @@
 package com.zk.service.impl;
 
 import com.zk.dao.TestMapper;
+import com.zk.entity.TestVO;
 import com.zk.redis.dao.RedisDao;
 import com.zk.service.TestService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @Service("testService")
 public class TestServiceImpl implements TestService{
@@ -18,9 +20,15 @@ public class TestServiceImpl implements TestService{
 
     @Override
     public void testHello() {
-        testMapper.testHello();
-        System.out.println(2222);
-        redisDao.saveString();
-        System.out.println(redisDao.getString());
+        List<TestVO> testList = testMapper.testHello();
+        for(TestVO vo : testList){
+            System.out.println(vo);
+        }
+        System.out.println("hehe");
+        redisDao.saveTestList(testList);
+        for(TestVO vo : testList){
+            System.out.println(redisDao.gettestList(vo.getId()));
+        }
+
     }
 }

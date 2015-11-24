@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="true">
+<configuration debug="false">
     <property name="APP_NAME" value="myWeb" />
     <property name="LOG_HOME" value="${catalina.home}/logs" />
     <property name="ENCODER_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%level]- %m%n"/>
@@ -11,7 +11,12 @@
         </encoder>
     </appender>
 
+    <logger name="com.zk" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
     <root level="ERROR">
         <appender-ref ref="STDOUT" />
     </root>
-</configuration>  
+
+</configuration>

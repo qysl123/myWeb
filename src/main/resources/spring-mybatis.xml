@@ -11,9 +11,7 @@
 		http://www.springframework.org/schema/aop
 		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd">
 
-	<context:component-scan base-package="com.zk" />
 	<aop:aspectj-autoproxy/>
-	
 	<!-- 数据源配置,使用应用内的proxool数据库连接池 -->
 	<bean id="dataSource" class="org.logicalcobwebs.proxool.ProxoolDataSource">
 		<!-- Connection Info destroy-method="close" -->
@@ -44,12 +42,12 @@
 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource" />
 		<!-- 自动扫描entity目录, 省掉Configuration.xml里的手工配置 -->
-		<property name="mapperLocations" value="classpath:com/zk/**/*Mapper.xml" />
+		<property name="mapperLocations" value="classpath:com/zk/dao/*Mapper.xml" />
 	</bean>
 
 	<!-- myBatis Mapper文件 -->
 	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-		<property name="basePackage" value="com.zk.**.dao" />
+		<property name="basePackage" value="com.zk.dao" />
 		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
 	</bean>
 
@@ -66,6 +64,4 @@
 		<property name="dataSource" ref="dataSource" />
 	</bean>
 
-	<!-- 引入shiro 缓存配置 -->
-	<!--<import resource="applicationContext-shiro.xml"/>-->
 </beans>

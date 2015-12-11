@@ -6,9 +6,7 @@ import java.util.List;
 
 public interface RedisDao {
 
-    void saveString();
-    String getString();
-    void saveTestList(List<TestVO> testList);
-    TestVO gettestList(String id);
+    void saveTest(TestVO testVO);
+    TestVO getTest(String id);
 
 }

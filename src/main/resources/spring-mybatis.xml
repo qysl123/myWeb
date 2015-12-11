@@ -11,7 +11,6 @@
 		http://www.springframework.org/schema/aop
 		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd">
 
-	<aop:aspectj-autoproxy/>
 	<!-- 数据源配置,使用应用内的proxool数据库连接池 -->
 	<bean id="dataSource" class="org.logicalcobwebs.proxool.ProxoolDataSource">
 		<!-- Connection Info destroy-method="close" -->

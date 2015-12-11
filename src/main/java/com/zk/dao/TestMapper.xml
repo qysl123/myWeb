@@ -2,8 +2,19 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.zk.dao.TestMapper">
 
-    <select id="testHello" resultType="com.zk.entity.TestVO">
+    <select id="getAllTest" resultType="com.zk.entity.TestVO">
         select * from test
     </select>
 
+    <select id="getTest" resultType="com.zk.entity.TestVO" parameterType="string">
+        select * from test where id=#{id}
+    </select>
+    
+    <insert id="saveTest" parameterType="com.zk.entity.TestVO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO test(name) VALUES (#{name})
+    </insert>
+
+    <update id="updateTest" parameterType="com.zk.entity.TestVO">
+        UPDATE  test SET name = #{name} WHERE id=#{id}
+    </update>
 </mapper>

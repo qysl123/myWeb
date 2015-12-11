@@ -8,6 +8,8 @@ import java.util.List;
 @Repository
 public interface TestMapper {
 
-    List<TestVO> testHello();
-
+    TestVO getTest(String id);
+    void saveTest(TestVO testVO);
+    void updateTest(TestVO testVO);
+    List<TestVO> getAllTest();
 }

@@ -16,12 +16,6 @@
 	<context:component-scan base-package="com.zk" />
 	<aop:aspectj-autoproxy />
 
-	<!-- 设置注入扫描包的根目录 -->
-	<!--<context:component-scan base-package="com.zk">-->
-		<!--<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service" />-->
-	<!--</context:component-scan>-->
-
-
 	<!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
 	<bean id="mappingJacksonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
 		<property name="supportedMediaTypes">

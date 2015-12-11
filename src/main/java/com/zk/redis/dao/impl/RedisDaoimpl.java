@@ -24,54 +24,25 @@ public class RedisDaoimpl implements RedisDao {
     protected RedisTemplate<Serializable, Serializable> redisTemplate;
 
     @Override
-    public void saveString() {
-        redisTemplate.execute(new RedisCallback<Object>() {
-
-            @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
-                connection.set(redisTemplate.getStringSerializer().serialize("Test1"),
-                        redisTemplate.getStringSerializer().serialize("Value1"));
-                return null;
-            }
-        });
-    }
-
-    @Override
-    public String getString() {
-        return redisTemplate.execute(new RedisCallback<String>() {
-            @Override
-            public String doInRedis(RedisConnection connection) throws DataAccessException {
-                byte[] bb = redisTemplate.getStringSerializer().serialize("Test1");
-                if(connection.exists(bb)){
-                    return redisTemplate.getStringSerializer().deserialize(connection.get(bb));
-                }
-                return null;
-            }
-        });
-    }
-
-    @Override
-    public void saveTestList(final List<TestVO> testList) {
+    public void saveTest(final TestVO testVO) {
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
             public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
-            for (TestVO vo : testList){
-                redisConnection.set(redisTemplate.getStringSerializer().serialize(vo.getId()),
-                        redisTemplate.getStringSerializer().serialize(JSONObject.fromObject(vo).toString()));
-            }
-            return null;
+                redisConnection.set(redisTemplate.getStringSerializer().serialize(testVO.getId()),
+                        redisTemplate.getStringSerializer().serialize(JSONObject.fromObject(testVO).toString()));
+                return null;
             }
         });
     }
 
     @Override
-    public TestVO gettestList(final String id) {
+    public TestVO getTest(final String id) {
         return redisTemplate.execute(new RedisCallback<TestVO>() {
             @Override
             public TestVO doInRedis(RedisConnection connection) throws DataAccessException {
                 byte[] bb = redisTemplate.getStringSerializer().serialize(id);
                 TestVO vo = null;
-                if(connection.exists(bb)){
+                if (connection.exists(bb)) {
                     String str = redisTemplate.getStringSerializer().deserialize(connection.get(bb));
                     vo = (TestVO) JSONObject.toBean(JSONObject.fromObject(str), TestVO.class);
                 }

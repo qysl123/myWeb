@@ -1,5 +1,6 @@
 package com.zk.controller;
 
+import com.zk.entity.FatherTestVO;
 import com.zk.entity.TestVO;
 import com.zk.service.TestService;
 import org.springframework.stereotype.Controller;
@@ -19,35 +20,44 @@ public class TestController {
     private TestService testService;
 
     @RequestMapping("/testHello.do")
-    public
     @ResponseBody
-    void testHello(@RequestParam Map<String, Object> paramMap){
-        TestVO testVO;
-        System.out.println("获取所有:");
-        List<TestVO> allList = testService.getAllTest();
-        for (TestVO vo : allList){
-            System.out.println(vo);
+    public void testHello(@RequestParam Map<String, Object> paramMap) {
+        try {
+            TestVO test = new TestVO();
+            FatherTestVO father = new FatherTestVO();
+
+            father.setName("father");
+
+            test.setName("test");
+            test.setFather(father);
+//            testService.saveTest(test);
+
+            List<TestVO> testVOList = testService.getAllTest();
+            for (TestVO v : testVOList){
+                test = v;
+                System.out.println(v);
+                v.setName(v.getName()+":123");
+                testService.modifyTest(v);
+            }
+
+            testService.removeTest(test);
+
+            List<FatherTestVO> fatherTestList = testService.getAllFather();
+            for (FatherTestVO v : fatherTestList){
+                System.out.println(v);
+                v.setName(v.getName()+":123");
+                testService.modifyFather(v);
+            }
+            testService.deleteFather(fatherTestList.get(0));
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
-        int random = (int)(Math.random() * 20);
-        System.out.println("保存:"+random);
-
-        if(random < allList.size()){
-            testVO = allList.get(random);
-            testVO.setName("test" + testVO.getId() + ":" + random);
-        }else{
-            testVO = new TestVO();
-            testVO.setName("test" + testVO.getId() + ":" + random);
-        }
-        testService.saveTest(testVO);
-
-        System.out.println("获取单个:"+testVO.getId());
-        testVO = testService.getTest(testVO.getId());
-        System.out.println(testVO);
-
-
-        System.out.println("获取没有的:"+1000);
-        testVO = testService.getTest(""+1000);
-        System.out.println(testVO);
+    @RequestMapping("/testHello.do")
+    @ResponseBody
+    public String login(@RequestParam Map<String, Object> paramMap){
+        return "";
     }
 }

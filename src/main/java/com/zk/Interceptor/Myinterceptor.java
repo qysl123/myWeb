@@ -20,24 +20,8 @@ public class MyInterceptor {
     @Pointcut("execution(* com.zk.service.impl.TestServiceImpl.saveTest(..))")
     private void addMethod(){}//定义一个切入点
 
-//    @Before("getMethod()")
-//    public void doAccessCheck(){
-//        System.out.println("前置通知");
-//    }
-
-//    @AfterReturning("addMethod()&&args(testVO)")
-//    public void doAfter(TestVO testVO){
-//        System.out.println("更新数据时,同时更新缓存");
-//        redisDao.saveTest(testVO);
-//    }
-
-//    @After("anyMethod()")
-//    public void after(){
-//        System.out.println("最终通知");
-//    }
-
     // 定义环绕通知
-    @Around("getMethod()")
+//    @Around("getMethod()")
     public Object getAround(ProceedingJoinPoint pjp) throws Throwable {
         System.out.println("通过缓存查询");
         String id = (String) pjp.getArgs()[0];
@@ -50,7 +34,7 @@ public class MyInterceptor {
     }
 
     // 定义环绕通知
-    @Around("addMethod()")
+//    @Around("addMethod()")
     public Object addAround(ProceedingJoinPoint pjp) throws Throwable {
         Object object = pjp.proceed();
         System.out.println("更新数据时,同时更新缓存");

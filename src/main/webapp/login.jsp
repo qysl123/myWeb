@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-md-4"></div>
         <div class="col-md-4">
-            <form class="form-signin" action="testController/testHello.do">
+            <form class="form-signin" action="testController/login.do">
                 <h2 class="form-signin-heading">Please sign in</h2>
 
                 <div class="form-group">

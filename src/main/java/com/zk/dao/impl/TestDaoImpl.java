@@ -13,10 +13,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
+
 public class TestDaoImpl implements TestDao {
 
-    @Autowired
+
     private SessionFactory sessionFactory;
 
     @Override

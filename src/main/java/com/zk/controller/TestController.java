@@ -22,40 +22,37 @@ public class TestController {
     @RequestMapping("/testHello.do")
     @ResponseBody
     public void testHello(@RequestParam Map<String, Object> paramMap) {
-        try {
-            TestVO test = new TestVO();
-            FatherTestVO father = new FatherTestVO();
+        final TestVO t = new TestVO();
+        t.setName("1");
 
-            father.setName("father");
+        final TestVO tt = new TestVO();
+        tt.setName("2");
 
-            test.setName("test");
-            test.setFather(father);
-//            testService.saveTest(test);
-
-            List<TestVO> testVOList = testService.getAllTest();
-            for (TestVO v : testVOList){
-                test = v;
-                System.out.println(v);
-                v.setName(v.getName()+":123");
-                testService.modifyTest(v);
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                testService.saveTest(t);
             }
-
-            testService.removeTest(test);
-
-            List<FatherTestVO> fatherTestList = testService.getAllFather();
-            for (FatherTestVO v : fatherTestList){
-                System.out.println(v);
-                v.setName(v.getName()+":123");
-                testService.modifyFather(v);
+        };
+        Runnable r2 = new Runnable() {
+            @Override
+            public void run() {
+                testService.removeTest(tt);
             }
-            testService.deleteFather(fatherTestList.get(0));
+        };
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        for(int i = 0;i<1;i++){
+            Thread thread = new Thread(r);
+            Thread thread2 = new Thread(r2);
+            thread.start();
+            thread2.start();
         }
+
+
+
     }
 
-    @RequestMapping("/testHello.do")
+    @RequestMapping("/login.do")
     @ResponseBody
     public String login(@RequestParam Map<String, Object> paramMap){
         return "";

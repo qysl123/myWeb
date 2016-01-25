@@ -17,4 +17,8 @@
     <update id="updateTest" parameterType="com.zk.entity.TestVO">
         UPDATE  test SET name = #{name} WHERE id=#{id}
     </update>
+
+    <insert id="removeTest" parameterType="com.zk.entity.TestVO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO test(name) VALUES (#{name})
+    </insert>
 </mapper>

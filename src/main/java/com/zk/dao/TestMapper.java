@@ -12,4 +12,6 @@ public interface TestMapper {
     void saveTest(TestVO testVO);
     void updateTest(TestVO testVO);
     List<TestVO> getAllTest();
+
+    void removeTest(TestVO testVO);
 }

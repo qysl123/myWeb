@@ -2,6 +2,7 @@ package com.zk.controller;
 
 import com.zk.entity.FatherTestVO;
 import com.zk.entity.TestVO;
+import com.zk.service.DataUsageService;
 import com.zk.service.TestService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,9 @@ public class TestController {
 
     @Resource
     private TestService testService;
+
+    @Resource
+    private DataUsageService dataUsageService;
 
     @RequestMapping("/testHello.do")
     @ResponseBody
@@ -47,14 +51,18 @@ public class TestController {
             thread.start();
             thread2.start();
         }
-
-
-
     }
 
     @RequestMapping("/login.do")
     @ResponseBody
     public String login(@RequestParam Map<String, Object> paramMap){
+        return "";
+    }
+
+    @RequestMapping("/getPackage.do")
+    @ResponseBody
+    public String getPackage(@RequestParam Map<String, Object> paramMap){
+        System.out.println(dataUsageService.getPackage("scysq", "0"));
         return "";
     }
 }

@@ -166,6 +166,11 @@
         <version>${shiro.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.jodd</groupId>
+        <artifactId>jodd-http</artifactId>
+        <version>3.6.3</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-spring</artifactId>
         <version>${shiro.version}</version>

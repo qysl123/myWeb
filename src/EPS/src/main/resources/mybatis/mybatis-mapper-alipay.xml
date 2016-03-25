@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.alipay.IAlipayDao">
+	<insert id="insertTrade" parameterType="com.yc.edsi.payment.third.AlipayRSAPO">
+		INSERT INTO alipay_trade_tab(tradeStatus,notifyId,outTradeNo,communityId,ownerId,payType,ids,
+			clientPayId,totalFee,mapBody,notifyUrl,createTime)
+		VALUES ( #{tradeStatus}, #{notifyId}, #{outTradeNo}, #{communityId}, #{ownerId}, #{payType}, #{ids}, 
+			#{clientPayId}, #{totalFee}, #{mapBody}, #{notifyUrl}, #{createTime})
+	</insert>
+	
+	<select id="getFinshTrade" parameterType="Long" resultType="int">
+		select count(outTradeNo) from alipay_trade_tab where outTradeNo = #{outTradeNo}
+	</select>
+	
+</mapper>

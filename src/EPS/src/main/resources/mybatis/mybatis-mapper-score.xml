@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.score.IOwnerScoreDao">
+	<insert id="addScore" parameterType="com.yc.edsi.payment.score.OwnerScorePO">
+	  insert into owner_score_tab (id, ownerId,ownerUserId,communityId,propertyId,score,createTime,loseTime,opaymentId,`desc`,orderId,taskId,taskPrompt) 
+	  values(#{id}, #{ownerId},#{ownerUserId},#{communityId},#{propertyId},#{score},#{createTime},#{loseTime},#{opaymentId},#{desc},#{orderId},#{taskId},#{taskPrompt})
+	</insert>
+	<select id="getOwnerScore" resultType="long" parameterType="long">
+	  select IFNULL(sum(os.score),0) score from owner_score_tab os 
+	  where os.ownerId = #{ownerId} and os.communityId = #{communityId}
+	</select>
+	<select id="checkIfAlreadyPay" resultType="int" parameterType="long">
+	  select count(1) from owner_score_tab where orderId = #{orderId} and communityId = #{communityId}
+	</select>
+	<select id="getTaskScoreCount" parameterType="com.yc.edsi.payment.score.OwnerScorePO" resultType="int">
+	  select count(1) from owner_score_tab where ownerId = #{ownerId} and taskId = #{taskId}
+	  <if test="orderId != null and orderId > 0">
+	  	and orderId = #{orderId}
+	  </if>
+	</select>
+	<select id="getTaskPrompt" resultType="string">
+		select taskPrompt from owner_score_tab
+		where taskPrompt is not null and taskPrompt != '' and taskId in (
+			select taskId from score_task_tab where optUri in 
+			<foreach collection="optUris" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		) and ownerId = #{ownerId} and communityId = #{communityId}
+	</select>
+	<update id="clearTaskPrompt">
+		update owner_score_tab set taskPrompt = ''
+		where taskPrompt is not null and taskPrompt != '' and taskId in (
+			select taskId from score_task_tab where optUri in 
+			<foreach collection="optUris" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		) and ownerId = #{ownerId} and communityId = #{communityId}
+	</update>
+	
+	<select id="getOwnerScoreByDay" resultType="com.yc.edsi.payment.score.OwnerScorePO">
+		select * from owner_score_tab
+		where taskId = #{taskId} and ownerId = #{ownerId} and communityId = #{communityId} and createTime like concat(#{day}, '%')
+		order by createTime desc limit 1
+	</select>
+	
+	<select id="getOwnerScoreByMon" resultType="com.yc.edsi.payment.score.OwnerScorePO">
+		select * from owner_score_tab
+		where taskId = #{taskId} and ownerId = #{ownerId} and communityId = #{communityId} and createTime like concat(#{mon}, '%')
+		order by createTime
+	</select>
+	
+	<select id="getActiveValue" resultType="long" parameterType="long">
+	  select IFNULL(sum(os.score),0) score from owner_score_tab os 
+	  where os.ownerId = #{ownerId} and os.communityId = #{communityId} and score > 0
+	</select>
+</mapper>

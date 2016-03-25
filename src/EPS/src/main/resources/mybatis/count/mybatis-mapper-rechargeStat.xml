@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.yc.eps.count.IRechargeStatDao">
+
+	<resultMap id="rechargeStat" type="com.yc.edsi.count.RechargeStatPO">
+        <result property="userId" column="userId"/>
+        <result property="userNo" column="userNo"/>
+        <result property="userName" column="userName"/>
+        <result property="rechargeCount" column="rechargeCount"/>
+        <result property="amount" column="amount"/>
+	</resultMap>
+    
+    <select id="find" resultMap="rechargeStat">
+		select su.userId, su.userNo, su.userName, count(1) rechargeCount, round(ifnull(sum(amount), 0.00), 2) amount
+		from owner_payment_tab op
+		left join ecomcommon.system_user_tab su on op.createUser = su.userNo
+		where op.flow = '1' and op.sysUserOptFlag = '1' and op.des = '工作人员APP充值'
+	    <if test="entity.startCreateDate != null and entity.startCreateDate != ''">
+		and op.createTime >= concat(#{entity.startCreateDate}, ' 00:00:00')
+		</if>
+	    <if test="entity.endCreateDate != null and entity.endCreateDate != ''">
+		and op.createTime <![CDATA[<=]]> concat(#{entity.endCreateDate}, ' 23:59:59')
+		</if>
+		group by op.createUser
+		order by convert(su.userNo using gbk)
+    </select>
+    
+    <select id="getRechargeList" resultType="com.yc.edsi.count.RechargeInfoPO">
+		select op.ownerName, op.amount, op.createTime, oi.phone, op.houseNumber, pi.propertyName, ci.communityName
+		from owner_payment_tab op
+		left join ecomowner.owner_info_tab oi on op.ownerId = oi.ownerId
+		left join ecomowner.property_info_table pi on oi.propertyId = pi.propertyId
+		left join ecomowner.community_info_tab ci on oi.communityId = ci.communityId
+		where op.flow = '1' and op.sysUserOptFlag = '1' and op.des = '工作人员APP充值'
+		and op.createUser = #{entity.userNo}
+	    <if test="entity.startCreateDate != null and entity.startCreateDate != ''">
+		and op.createTime >= concat(#{entity.startCreateDate}, ' 00:00:00')
+		</if>
+	    <if test="entity.endCreateDate != null and entity.endCreateDate != ''">
+		and op.createTime <![CDATA[<=]]> concat(#{entity.endCreateDate}, ' 23:59:59')
+		</if>
+		order by op.createTime desc
+    </select>
+	
+</mapper>
+

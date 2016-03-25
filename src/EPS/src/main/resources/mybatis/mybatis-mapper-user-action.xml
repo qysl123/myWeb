@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yc.eps.count.IUserAtionCountDao">
+	
+	<select id="getUserActionList" resultType="com.yc.edsi.count.UserActionCountPO" >
+		SELECT 
+		propertyId,
+		<if test="uac.conditionPeriod > 0">
+		LEFT (createTime, #{uac.conditionPeriod}) AS createTime,
+		</if>
+		<![CDATA[
+		SUM(if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='现金',cash,0)) as cash,
+		SUM(if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='支付宝',cash,0)) as lakela,
+		SUM(if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='银联',cash,0)) as unionpay,
+		SUM(if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='转账',cash,0)) as accounts,
+		SUM(if(sysUserOptFlag ='1' AND flow = 0 AND	amount <0 AND billNo IS NOT NULL,amount,0)) as seekMoney,
+		SUM(if((sysUserOptFlag ='1' OR sysUserOptFlag ='2') AND flow = 0 AND amount <0 AND billNo IS NULL,amount,0)) as payment,
+		SUM(if(sysUserOptFlag ='0' AND flow = 0 AND amount <0 AND billNo IS NULL,amount,0)) as consume,
+		SUM(if(sysUserOptFlag ='1' AND flow = 1 AND	extcash >0,extCash,0)) as vouchers
+		]]>
+		from owner_payment_tab
+		where communityId = #{uac.communityId} and createTime BETWEEN #{uac.startTime} and #{uac.endTime}
+		<if test="uac.propertyId != null and uac.propertyId !=''">
+			AND propertyId = #{uac.propertyId}
+		</if>	
+		 <if test="rangePropertyIds != '-1'">
+		    and propertyId in 
+		    <foreach collection="propertyIds" item="it" open="(" close=")" separator=",">
+		      #{it}
+		    </foreach>
+		 </if>
+		 <if test="rangePropertyIds == null or rangePropertyIds == ''">
+		   and 1 > 2
+		 </if>
+		GROUP BY
+		<if test="uac.conditionPeriod > 0">
+		left (createTime,#{uac.conditionPeriod}),
+		</if>
+		propertyId
+		<if test="uac.startIndex >= 0">
+			LIMIT #{uac.startIndex},#{uac.pageSize}
+		</if>
+	</select>
+	
+	<select id="getUserInfoList"  parameterType="com.yc.edsi.count.UserActionCountPO" resultType="com.yc.edsi.count.UserActionCountPO" >
+		SELECT 
+		propertyId,createTime,ownerName,
+		<![CDATA[
+		if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='现金',cash,0) as cash,
+		if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='支付宝',cash,0) as lakela,
+		if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='银联',cash,0) as unionpay,
+		if(sysUserOptFlag ='1' AND flow = 1 AND	cash >0 AND billNo IS NOT NULL AND payType='转账',cash,0) as accounts,
+		if(sysUserOptFlag ='1' AND flow = 0 AND	amount <0 AND billNo IS NOT NULL,amount,0) as seekMoney,
+		if((sysUserOptFlag ='1' OR sysUserOptFlag ='2') AND flow = 0 AND amount <0 AND billNo IS NULL,amount,0) as payment,
+		if(sysUserOptFlag ='0' AND flow = 0 AND amount <0 AND billNo IS NULL,amount,0) as consume,
+		if(sysUserOptFlag ='1' AND flow = 1 AND	extcash >0,extCash,0) as vouchers
+		]]>
+		from owner_payment_tab
+		where communityId = #{uac.communityId} and createTime BETWEEN #{uac.startTime} and #{uac.endTime}
+		<if test="uac.propertyId != null and uac.propertyId !=''">
+			and propertyId = #{uac.propertyId}
+		</if>
+		<if test="rangePropertyIds != '-1'">
+		    and propertyId in 
+		    <foreach collection="propertyIds" item="it" open="(" close=")" separator=",">
+		      #{it}
+		    </foreach>
+		 </if>
+		 <if test="rangePropertyIds == null or rangePropertyIds == ''">
+		   and 1 > 2
+		 </if>
+		ORDER BY createTime desc
+	</select>
+</mapper>

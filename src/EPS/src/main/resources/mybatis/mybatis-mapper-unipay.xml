@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.unipay.IUniPayDao">
+	<insert id="insertUniTrade" parameterType="com.yc.edsi.payment.third.UniPayPO">
+		INSERT INTO unipay_trade_info(outTradeNo,communityId, sellerId,ownerId,tradeCount,subject,body, 
+		totalFee,accNo,ipAddr,info,notifyUrl,createTime,singResult,queryId,respCode,respMsg)
+		VALUES ( #{outTradeNo},#{communityId}, #{sellerId},#{ownerId},#{tradeCount},#{subject},#{body}, 
+		#{totalFee}, #{accNo}, #{ipAddr}, #{info}, #{notifyUrl},#{createTime},#{singResult},#{queryId},#{respCode},#{respMsg})
+	</insert>
+	
+	<select id="getUniFinishTrade" parameterType="String" resultType="int">
+		select count(outTradeNo) from unipay_trade_info where outTradeNo = #{outTradeNo} and singResult='1' and respCode='00'
+	</select>
+	
+</mapper>

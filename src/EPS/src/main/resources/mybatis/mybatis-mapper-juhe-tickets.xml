@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须要写,并且必须是Mapper接口的全路径 -->
+<mapper namespace="com.yc.eps.tickets.ITicketsDao">
+	<insert id="insert" parameterType="com.yc.edsi.tickets.TicketsOrderPO">
+		INSERT INTO train_order_tab(toId,fromStationCode,fromStationName,toStationCode,toStationName,orderId,trainDate,
+			checi,orderStatus,communityId,ownerId,body,createTime,status,payMoney,startTime,
+			arriveTime,arriveDays)
+		VALUES (#{toId},#{fromStationCode},#{fromStationName},#{toStationCode},#{toStationName},#{orderId},#{trainDate},
+			#{checi},#{orderStatus},#{communityId},#{ownerId},#{body},#{createTime},#{status},#{payMoney},#{startTime},
+			#{arriveTime},#{arriveDays})
+	</insert>
+	<select id="getList" resultType="com.yc.edsi.tickets.TicketsOrderPO">
+		select * from train_order_tab where communityId=#{communityId} and ownerId=#{ownerId}
+		<if test="status !=null and status != ''">
+			and status = #{status}
+		</if>
+		order by trainDate desc
+	</select>
+	<select id="getListByOrderStatus" resultType="com.yc.edsi.tickets.TicketsOrderPO">
+		select * from train_order_tab where 1=1
+		<if test="statuses != null and statuses.size > 0 ">
+			<foreach collection="statuses" item="status" index="index" open="and (" close=")" separator=" or ">
+	            orderStatus =#{status}
+        	</foreach>
+       	</if>
+	</select>
+	<select id="getTickets" resultType="com.yc.edsi.tickets.TicketsOrderPO">
+		select * from train_order_tab where communityId=#{communityId} and ownerId=#{ownerId} and orderId=#{orderId}
+	</select>
+	<update id="update" parameterType="com.yc.edsi.tickets.TicketsOrderPO">
+		update train_order_tab
+		<set>
+			<if test="orderStatus !=null">
+				orderStatus = #{orderStatus},
+			</if>
+			<if test="body !=null">
+				body = #{body},
+			</if>
+			<if test="paymentId !=null and paymentId > 0">
+				paymentId = #{paymentId},
+			</if>
+			<if test="status !=null">
+				status = #{status},
+			</if>
+		</set>
+		where communityId=#{communityId} and ownerId=#{ownerId} and orderId=#{orderId}
+	</update>
+	
+	<insert id="insertTicketR" parameterType="com.yc.eps.tickets.TicketsReturnPO">
+		INSERT INTO train_return_tab(orderId,communityId,ownerId,ticketNo,submitTime)
+		VALUES (#{orderId},#{communityId},#{ownerId},#{ticketNo},#{submitTime})
+	</insert>
+	<update id="updateTicketR" parameterType="com.yc.eps.tickets.TicketsReturnPO">
+		update train_return_tab
+		<set>
+			<if test="finishTime !=null">
+				finishTime = #{finishTime},
+			</if>
+			<if test="finish !=null">
+				finish = #{finish},
+			</if>
+			<if test="price !=null">
+				price = #{price},
+			</if>
+			<if test="paymentId !=null">
+				paymentId = #{paymentId},
+			</if>
+		</set>
+		where orderId=#{orderId} and ticketNo=#{ticketNo} and returnId=#{returnId}
+	</update>
+	
+	<select id="getTicketsR" resultType="com.yc.eps.tickets.TicketsReturnPO">
+		select * from train_return_tab where orderId=#{orderId} and ticketNo=#{ticketNo}
+	</select>
+	
+</mapper>

@@ -1,0 +1,986 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.IPaymentDao">
+	<insert id="insertOwnerPayment" parameterType="com.yc.edsi.payment.OwnerPaymentPO">
+		INSERT INTO owner_payment_tab(paymentId,communityId, ownerId,ownerName,cardNo,propertyId, 
+		ownerUserId,ownerUserNo,ownerUserName,orderId,cash,extCash,
+		sellerId,sellerNo,billNo,sellerName,amount,payType,createTime,createUser,flow,sysUserOptFlag,des,displayDes,
+		cashId,cashNo,cashAmt,cashSendType,cashSenderId,cashSendName,houseNumber,isCommPayee,subcomId)
+		VALUES ( #{paymentId},#{communityId}, #{ownerId},#{ownerName},#{cardNo},#{propertyId}, 
+		#{ownerUserId}, #{ownerUserNo}, #{ownerUserName}, #{orderId},#{cash},#{extCash},
+		#{sellerId},#{sellerNo},#{billNo},#{sellerName},#{amount},#{payType},#{createTime},#{createUser},#{flow},
+		#{sysUserOptFlag},#{des},#{displayDes},#{cashId},#{cashNo},#{cashAmt},#{cashSendType},#{cashSenderId},#{cashSendName},
+		#{houseNumber},#{isCommPayee},#{subcomId})
+	</insert>
+
+	<select id="getOwnerAccountBalance" parameterType="java.util.Map" resultType="double">
+		select  ifnull(sum(round(amount,2)),0.00) from owner_payment_tab where communityId=#{communityId} and ownerId=#{ownerId}
+	</select>
+
+	<sql id="paymentListSql">
+		<where>
+			communityId=#{communityId} and ownerId=#{ownerId} and amount != 0
+			<if test="startTime!=null and startTime!=''">
+				and createTime >= CONCAT(#{startTime},' 00:00:00')
+			</if>
+			<if test="endTime!=null and endTime!=''">
+				and createTime <![CDATA[ <= ]]> CONCAT(#{endTime},' 23:59:59')
+			</if>
+			<if test="rangePropertyIds != '-1'">
+			    and propertyId in 
+			    <foreach collection="propertyIds" item="it" open="(" close=")" separator=",">
+			      #{it}
+			    </foreach>
+			</if>
+			<if test="rangePropertyIds == null or rangePropertyIds == ''">
+			   and 1 > 2
+			</if>
+		</where>
+	</sql>
+	<select id="getOwnerAccountListCount" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(sellerId) FROM owner_payment_tab 
+		<include refid="paymentListSql"/>
+	</select>
+	<select id="getOwnerAccountList" parameterType="java.util.Map" resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		SELECT * FROM owner_payment_tab
+		<include refid="paymentListSql"/>  
+		ORDER BY paymentId DESC
+		<if test="startIndex != null and startIndex !=''">
+		LIMIT ${startIndex},${pageSize}
+		</if>
+	</select>	
+	<select id="getOwnerAccount" resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		select * from owner_payment_tab where paymentId=#{paymentId}
+		<if test="communityId != null and communityId > 0">
+			and communityId = #{communityId}
+		</if>
+	</select>
+	<select id="getOwnerPaymentPO" parameterType="java.util.Map"  resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		select * from owner_payment_tab where paymentId=#{paymentId} 
+		and ownerId=#{ownerId} and communityId=#{communityId}
+	</select>
+
+	<insert id="insertSellerPayment" parameterType="com.yc.edsi.payment.SellerPaymentPO">
+		INSERT INTO seller_payment_tab(sPaymentId,oPaymentId,communityId,propertyId, ownerId, ownerUserId,ownerUserNo,ownerUserName,orderId,
+		sellerId,sellerNo,sellerName,amount,payType,createTime,flow,applySettlement,finishSettlement,isCommPayee, subcomId)
+		VALUES ( #{sPaymentId},#{oPaymentId},#{communityId},#{propertyId}, #{ownerId}, #{ownerUserId}, #{ownerUserNo}, #{ownerUserName}, #{orderId},
+		#{sellerId},#{sellerNo},#{sellerName},#{amount},#{payType},#{createTime},#{flow},#{applySettlement},#{finishSettlement},#{isCommPayee}, #{subcomId})
+	</insert>
+	
+	<select id="getListByBillNo" resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		select * from owner_payment_tab where billNo = #{billNo} and communityId=#{communityId}
+	</select>
+	
+	
+	<select id="getAllOwnerAccountListCount" parameterType="com.yc.edsi.payment.OwnerPaymentPO" resultType="int">
+		SELECT COUNT(1) FROM owner_payment_tab op
+		<include refid="paymentAllListSql"/>
+	</select>
+	<select id="getAllOwnerAccountList" resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		SELECT IF(op.createTime > (SELECT IFNULL(MAX(ph.payablesEndTime),'1970-01-01 00:00') AS pet
+		FROM payables_history_tab ph WHERE ph.propertyId = op.propertyId) 
+		and  op.billNo IS NOT NULL ,1,0) as canChangeBillNo,op.*
+		FROM owner_payment_tab	op
+		<include refid="paymentAllListSql"/>  
+		ORDER BY op.paymentId DESC
+		<if test="op.startIndex != null and op.startIndex >=0 ">
+		LIMIT ${op.startIndex},${op.pageSize}
+		</if>
+	</select>	
+	<sql id="paymentAllListSql">
+		<where>
+			<if test="op.communityId !=null and op.communityId > -1">
+				 op.communityId = #{op.communityId}
+			</if>
+			<if test="op.houseNumber !=null and op.houseNumber !=''">
+				and op.houseNumber like CONCAT('%',#{op.houseNumber},'%' )
+			</if>
+			<if test="op.ownerId !=null and op.ownerId > -1">
+				and op.ownerId = #{op.ownerId}
+			</if>
+			<if test="op.sellerNo !=null and op.sellerNo !=''">
+				and op.sellerNo = #{op.sellerNo}
+			</if>
+			<if test="op.billNo !=null and op.billNo !=''">
+				and op.billNo like CONCAT('%',#{op.billNo},'%' )
+			</if>
+			<if test="op.ownerName !=null and op.ownerName !=''">
+				and op.ownerName  like CONCAT('%',#{op.ownerName},'%' )
+			</if>
+			<if test="op.flow == 0">
+				<![CDATA[ and op.flow = #{op.flow} and sysUserOptFlag ='0' ]]>
+			</if>
+			<if test="op.flow == 1">
+				<![CDATA[ and op.flow = #{op.flow} and sysUserOptFlag ='1']]>
+			</if>
+			<if test="op.flow == 3">
+				 <![CDATA[ and op.flow = '0' and op.sysUserOptFlag ='1' and op.amount <0 and op.billNo is not null]]>
+			</if>
+			<if test="op.flow == 4">
+				 <![CDATA[ and op.flow = '0' and (op.sysUserOptFlag ='1' or op.sysUserOptFlag ='2') and op.amount <=0 and op.billNo is null]]>
+			</if>
+			<if test="op.createStartTime !=null and op.createStartTime !=''">
+				and op.createTime >= CONCAT(#{op.createStartTime},' 00:00:00')
+			</if>
+			<if test="op.createEndTime !=null and op.createEndTime !=''">
+				and op.createTime <![CDATA[ <= ]]> CONCAT(#{op.createEndTime},' 23:59:59')
+			</if>
+			<if test="rangePropertyIds != '-1'">
+			    and op.propertyId in 
+			    <foreach collection="propertyIds" item="it" open="(" close=")" separator=",">
+			      #{it}
+			    </foreach>
+		    </if>
+			<if test="op.payType !=null and op.payType !=''">
+				and payType = #{payType}
+			</if>
+		    <if test="rangePropertyIds == null or rangePropertyIds == ''">
+		      and 1 > 2
+		    </if>
+			<if test="op.propertyId !=null and op.propertyId > -1">
+				 and op.propertyId = #{op.propertyId}
+			</if>
+		</where>
+	</sql>
+
+
+
+    <update id="batchUpdateApplyStatus">
+		UPDATE seller_payment_tab spt set spt.applySettlement = '1',spt.applyTime = date_format(now(),'%Y-%m-%d %H:%i:%s')
+		where spt.sellerId = #{sellerId} 
+		<if test="communityId != null and communityId > -1">
+		and spt.isCommPayee = '1' and spt.communityId  = #{communityId}
+		</if>
+		<if test="communityId != null and communityId == -1">
+		and spt.isCommPayee = '0'
+		</if>
+		and left(spt.createTime,7) = #{settleMonth} 
+		and spt.applySettlement = '0' and spt.finishSettlement = '0'
+    </update>
+
+    <update id="batchUpdateFinishStatus">
+        update seller_payment_tab spt set spt.finishSettlement = '1',spt.finishTime = date_format(now(),'%Y-%m-%d %H:%i:%s')
+        where spt.sPaymentId in (select ssd.sPaymentId from seller_settle_tab sst,seller_settle_detail_tab ssd 
+        where sst.sellerSettleId = ssd.sellerSettleId and sst.sellerSettleId = #{sellerSettleId})
+    </update>
+
+    <select id="getRechargeStatistics" parameterType="java.util.Map" resultType="com.yc.edsi.payment.OwnerPaymentStatisticsPO">
+		<![CDATA[
+ 		SELECT ot.communityId, 
+ 			ot.propertyId, 
+			sum( case ot.payType  when '现金'  then  amount   else  0   end )  moneyIn1, 
+			sum( case ot.payType  when '支付宝'  then  amount   else  0   end )  moneyIn2,
+ 			sum( case ot.payType  when '银联'  then  amount   else  0   end )  moneyIn3, 
+ 			sum( case ot.payType  when '转账' then  amount   else  0   end )  moneyIn4,
+			sum(if(amount <0 ,amount,0))  moneyIn 
+ 		from owner_payment_tab ot 
+ 		 ]]>
+		<include refid="rechargeStatisticsSql"/>  
+		<if test="startIndex != null and startIndex !=''">
+		LIMIT ${startIndex},${pageSize}
+		</if>	
+	</select>
+	<select id="getRechargeStatisticsCount" parameterType="java.util.Map" resultType="int">
+	 select count(1) from  (
+		SELECT COUNT(DISTINCT propertyId) from owner_payment_tab ot
+		<include refid="rechargeStatisticsSql"/>  
+		) tmp
+	</select>
+	<sql id="rechargeStatisticsSql">
+		<where>
+			 ot.communityId = #{communityId}
+			<if test="createStartTime !=null and createStartTime !=''">
+				and createTime >= #{createStartTime}
+			</if>
+			<if test="createEndTime !=null and createEndTime !=''">
+				and createTime <![CDATA[ <= ]]> #{createEndTime}
+			</if>
+			<if test="propertyId !=null and propertyId > -1">
+				and ot.propertyId = #{propertyId}
+			</if>
+			GROUP BY ot.propertyId	
+			ORDER BY ot.propertyId DESC
+		</where>
+	</sql>
+    <select id="getReceivableStatistics" parameterType="java.util.Map" resultType="com.yc.edsi.payment.OwnerPaymentStatisticsPO">
+		<![CDATA[
+		    SELECT 
+				propertyId,
+				SUM(if(sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='现金',cash,0)) as 'moneyIn1',
+				SUM(if(sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='支付宝',cash,0)) as 'moneyIn2',
+				SUM(if(sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='银联',cash,0)) as 'moneyIn3',
+				SUM(if(sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='转账',cash,0)) as 'moneyIn4',
+				SUM(if(sysUserOptFlag ='1' AND flow = '0' 	AND	amount <0 	AND	billNo IS NOT NULL,amount,0)) as 'moneyIn5',
+				SUM(if((sysUserOptFlag ='1' OR sysUserOptFlag ='2') AND flow = '0' 	AND amount <0 	AND	billNo IS NULL,amount,0)) as 'moneyIn6',
+				SUM(if(sysUserOptFlag ='0' AND flow = '0' 	AND amount <0 AND billNo IS NULL,amount,0)) as 'moneyIn7',
+				SUM(if(sysUserOptFlag ='1' AND flow = 1 	AND	extcash >0,extCash,0)) as 'moneyIn8'
+				from owner_payment_tab ot
+		]]>
+		<include refid="receivableStatisticsSql"/>
+    </select>
+    <sql id="receivableStatisticsSql">
+		<where>
+	 		 ot.communityId = #{communityId}
+			<if test="createStartTime !=null and createStartTime !=''">
+				and createTime >= #{createStartTime}
+			</if>
+			<if test="createEndTime !=null and createEndTime !=''">
+				and createTime <![CDATA[ <= ]]> #{createEndTime}
+			</if>
+			<if test="propertyIds !=null and propertyIds != ''">
+				and ot.propertyId in
+				<foreach item="item" index="index" collection="propertyIds" open="(" separator="," close=")">  
+					#{item}
+				</foreach>
+			</if>
+			and (ot.orderId = -1 or ot.orderId is null ) 
+			<![CDATA[
+				AND (ot.createTime >= (SELECT IFNULL(MAX(pht.payablesEndTime),'1970-01-21 00:00:01') from payables_history_tab pht WHERE pht.communityId = ot.communityId and pht.propertyId = ot.propertyId))
+	 		]]> 
+	 		<if test="createTime != null and createTime != ''">
+	 			<![CDATA[AND ot.createTime < #{createEndTime}]]> 
+	 		</if>
+			GROUP BY ot.propertyId	
+			ORDER BY ot.propertyId DESC
+		</where>
+	</sql>
+	<select id="getStatisticsDetail" parameterType="java.util.Map" resultType="com.yc.edsi.payment.OwnerPaymentStatisticsPO">
+		<![CDATA[
+			SELECT 
+				ot.propertyId,
+				ot.ownerName,
+				ot.paymentId as id,
+				ot.billNo,
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='现金') THEN cash 
+				END as 'moneyIn1', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='支付宝') THEN cash
+				END as 'moneyIn2',
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='银联') THEN cash
+				END as 'moneyIn3', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 	AND	cash >0   AND		billNo IS NOT NULL AND payType='转账') THEN cash
+				END as 'moneyIn4', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 0 AND	amount <0 	AND	billNo IS NOT NULL) THEN amount
+				END as 'moneyIn5',
+				CASE
+						WHEN ((sysUserOptFlag ='1' OR sysUserOptFlag ='2') AND flow = 0 AND  amount <0 	AND	billNo IS NULL) THEN amount
+				END as 'moneyIn6', 
+				CASE
+						WHEN (sysUserOptFlag ='0' AND flow = 0 AND   amount <0 AND billNo IS NULL) THEN amount
+				END as 'moneyIn7',
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 	AND	extcash >0) THEN extCash
+				END as 'moneyIn8',
+				ot.createTime,
+				ot.createUser,
+				ot.des
+		]]>
+		from owner_payment_tab ot
+		where 1=1
+		<if test="communityId !=null and communityId > -1">
+			and ot.communityId = #{communityId}		
+		</if>	
+		<if test="propertyIds !=null">
+			and ot.propertyId in
+			<foreach item="item" index="index" collection="propertyIds" open="(" separator="," close=")">  
+				#{item}
+			</foreach>
+		</if>
+		and (ot.orderId = -1 or ot.orderId is null ) 
+		<![CDATA[
+			AND (ot.createTime >= (SELECT IFNULL(MAX(pht.payablesEndTime),'1970-01-21 00:00:01') from payables_history_tab pht WHERE pht.communityId = ot.communityId and pht.propertyId = ot.propertyId))
+ 		]]> 
+ 		<if test="createEndTime != null and createEndTime != ''">
+ 			<![CDATA[AND ot.createTime < #{createEndTime}]]> 
+ 		</if>
+			GROUP BY ot.ownerId,ot.paymentId
+			ORDER BY ot.createTime DESC
+    </select>
+    <select id="getOwnerPaymentInfo" resultType="com.yc.edsi.payment.OwnerPaymentPO">
+		select * from owner_payment_tab where orderId = #{orderId} and orderId != -1
+		<if test="communityId !=null and communityId > -1">
+			and communityId = #{communityId}		
+		</if>
+	</select>
+    <update id="updateBillNo" parameterType="java.util.Map">
+	    update owner_payment_tab set billNo = #{billNo},des = #{des} where  paymentId = #{paymentId}
+    	and ownerId = #{ownerId} and communityId = #{communityId}
+    </update>
+	<select id="getSubmitSettlementApply" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select * from seller_settle_tab where sellerId = #{sellerId} and settleStatus != '4' order by createTime desc
+	</select>
+	<select id="getSettlementApplyHistory" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select * from seller_settle_tab where sellerId = #{sellerId} and settleStatus = '4' order by createTime desc
+	</select>
+	<select id="getWaitApplySettleDetail" resultType="com.yc.edsi.payment.SellerPaymentPO">
+		 select spt.* from seller_payment_tab spt where spt.sellerId = #{sellerId} 
+		 and left(spt.createTime,7) = #{settleMonth} and applySettlement = '0' 
+		 <if test="communityId != null and communityId > -1">
+		 and spt.isCommPayee = '1' and spt.communityId  = #{communityId}
+		 </if>
+		 <if test="communityId != null and communityId == -1">
+		 and spt.isCommPayee = '0'
+		 </if>
+		 and finishSettlement = '0' order by spt.createTime
+	</select>
+	<select id="getSellerSettleApplyDetail" resultType="com.yc.edsi.payment.SellerPaymentPO">
+		select sp.*,ss.sellerSettleId from  seller_payment_tab sp,seller_settle_detail_tab ssd, seller_settle_tab ss 
+	    left join ecomInfo.seller_info_tab si on ss.sellerId = si.sellerId
+		where ss.sellerSettleId = ssd.sellerSettleId
+		and ssd.sPaymentId = sp.sPaymentId and (ss.SettleStatus = '0' or ss.SettleStatus = '1')
+		and sp.applySettlement = '1' and sp.finishSettlement = '0'
+		  <if test='pfType != null and pfType == "2"'>
+		  and ss.isCommPayee = '1'
+		  and ss.communityId = #{ss.communityId}
+		  </if>
+		  <if test='pfType != null and pfType == "1"'>
+		      <if test="ss.sellerName != null and ss.sellerName != ''">
+		      and si.sellerName like concat('%', #{ss.sellerName}, '%')
+		      </if>
+		      <if test="ss.settleMonth != null and ss.settleMonth != ''">
+		      and ss.settleMonth = #{ss.settleMonth}
+		      </if>
+		      <if test="ss.isCommPayee != null and ss.isCommPayee != ''">
+		      and ss.isCommPayee = #{ss.isCommPayee}
+		      </if>
+			  <if test="ss.subcomId != null and ss.subcomId != ''">
+			  and ss.subcomId = #{ss.subcomId}
+			  </if>
+		  </if>
+		  <if test='pfType == null or pfType != "1" and pfType != "2"'>
+		  and 1 = 0
+		  </if>
+			order by ss.sellerSettleId,sp.createTime
+	</select>	
+	<select id="getSellerSettleDetail" resultType="com.yc.edsi.payment.SellerPaymentPO">
+	   <![CDATA[
+		 select sp.* from seller_payment_tab sp,seller_settle_detail_tab ssdt
+         where sp.sPaymentId = ssdt.sPaymentId and ssdt.sellerSettleId = #{sellerSettleId}
+         order by sp.createTime,sp.sPaymentId
+	   ]]> 
+	</select>
+	<insert id="insertSellerSettle">
+	    <![CDATA[
+			insert into seller_settle_tab(sellerSettleId,sellerId,communityId,sellerSubmitTime,financeAgreeTime,
+			financeSureTime,financeRefuseTime,financeRefuseReason,sellerDissentReason,SettleStatus,totalTradeNum,
+			canSettleNum,canSettleTotalAmount,tradeCommiAmount,canSettleAmount,commissionPercent,createTime, memo,
+			settleMonth,subcomId,isCommPayee)
+			values(#{approveSettle.sellerSettleId,jdbcType=INTEGER}, #{approveSettle.sellerId,jdbcType=INTEGER},
+			#{approveSettle.communityId,jdbcType=INTEGER},#{approveSettle.sellerSubmitTime,jdbcType=TIMESTAMP},
+			#{approveSettle.financeAgreeTime,jdbcType=TIMESTAMP}, #{approveSettle.financeSureTime,jdbcType=TIMESTAMP},
+			#{approveSettle.financeRefuseTime,jdbcType=TIMESTAMP},#{approveSettle.financeRefuseReason,jdbcType=VARCHAR},
+			#{approveSettle.sellerDissentReason,jdbcType=VARCHAR},#{approveSettle.settleStatus,jdbcType=VARCHAR}, 
+			#{approveSettle.totalTradeNum,jdbcType=INTEGER},#{approveSettle.canSettleNum,jdbcType=INTEGER},
+			#{approveSettle.canSettleTotalAmount,jdbcType=DOUBLE},#{approveSettle.tradeCommiAmount,jdbcType=DOUBLE},
+			#{approveSettle.canSettleAmount,jdbcType=DOUBLE},#{approveSettle.commissionPercent,jdbcType=DOUBLE},
+			#{approveSettle.createTime,jdbcType=TIMESTAMP},#{approveSettle.memo,jdbcType=VARCHAR},
+			#{approveSettle.settleMonth,jdbcType=VARCHAR},#{approveSettle.subcomId,jdbcType=VARCHAR},
+			#{approveSettle.isCommPayee,jdbcType=VARCHAR})
+	   ]]> 
+	</insert>
+	<update id="updateSettle">
+	    update seller_settle_tab set sellerSubmitTime = #{settle.sellerSubmitTime,jdbcType=TIMESTAMP},
+	    financeAgreeTime = #{settle.financeAgreeTime,jdbcType=TIMESTAMP},financeSureTime = #{settle.financeSureTime,jdbcType=TIMESTAMP},
+	    financeRefuseTime = #{settle.financeRefuseTime,jdbcType=TIMESTAMP},financeRefuseReason = #{settle.financeRefuseReason,jdbcType=VARCHAR},
+	    sellerDissentReason = #{settle.sellerDissentReason,jdbcType=VARCHAR}, SettleStatus = #{settle.settleStatus,jdbcType=VARCHAR},
+	    sellerSureTime = #{settle.sellerSureTime,jdbcType=TIMESTAMP},memo = #{settle.memo,jdbcType=VARCHAR},
+	    platformApply = #{settle.platformApply,jdbcType=VARCHAR} where sellerSettleId = #{settle.sellerSettleId,jdbcType=INTEGER}
+	</update>
+	
+	<insert id="batchInsertSettleDetail">
+		insert into seller_settle_detail_tab (sellerSettleDetailId,sellerSettleId,sPaymentId) values
+		<foreach collection="ssdList" item="item" index="index" separator=",">
+			(#{item.sellerSettleDetailId},#{item.sellerSettleId},#{item.spaymentId})
+		</foreach>
+	</insert>
+	<select id="getSellerSettleApply" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select ss.* from seller_settle_tab ss
+	  left join ecomInfo.seller_info_tab si on ss.sellerId = si.sellerId
+	  where (ss.settleStatus = '0' or ss.settleStatus = '1')
+	  <if test='pfType != null and pfType == "2"'>
+	  and ss.isCommPayee = '1'
+	  and ss.communityId = #{ss.communityId}
+	  </if>
+	  <if test='pfType != null and pfType == "1"'>
+	      <if test="ss.sellerName != null and ss.sellerName != ''">
+	      and si.sellerName like concat('%', #{ss.sellerName}, '%')
+	      </if>
+	      <if test="ss.settleMonth != null and ss.settleMonth != ''">
+	      and ss.settleMonth = #{ss.settleMonth}
+	      </if>
+	      <if test="ss.isCommPayee != null and ss.isCommPayee != ''">
+	      and ss.isCommPayee = #{ss.isCommPayee}
+	      </if>
+		  <if test="ss.subcomId != null and ss.subcomId != ''">
+		  and ss.subcomId = #{ss.subcomId}
+		  </if>
+	  </if>
+	  <if test='pfType == null or pfType != "1" and pfType != "2"'>
+	  and 1 = 0
+	  </if>
+	  order by createTime desc
+	</select>
+	<select id="getSellerSettleSum" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select sum(ss.canSettleTotalAmount) as canSettleTotalAmount,
+	   sum(ss.tradeCommiAmount) as tradeCommiAmount,sum(ss.canSettleAmount) as canSettleAmount 
+	   from seller_settle_tab ss
+	  left join ecomInfo.seller_info_tab si on ss.sellerId = si.sellerId
+	  where (ss.settleStatus = '0' or ss.settleStatus = '1')
+	  <if test='pfType != null and pfType == "2"'>
+	  and ss.isCommPayee = '1'
+	  and ss.communityId = #{ss.communityId}
+	  </if>
+	  <if test='pfType != null and pfType == "1"'>
+	      <if test="ss.sellerName != null and ss.sellerName != ''">
+	      and si.sellerName like concat('%', #{ss.sellerName}, '%')
+	      </if>
+	      <if test="ss.settleMonth != null and ss.settleMonth != ''">
+	      and ss.settleMonth = #{ss.settleMonth}
+	      </if>
+	      <if test="ss.isCommPayee != null and ss.isCommPayee != ''">
+	      and ss.isCommPayee = #{ss.isCommPayee}
+	      </if>
+		  <if test="ss.subcomId != null and ss.subcomId != ''">
+		  and ss.subcomId = #{ss.subcomId}
+		  </if>
+	  </if>
+	  <if test='pfType == null or pfType != "1" and pfType != "2"'>
+	  and 1 = 0
+	  </if>
+	</select>
+	<select id="getFinishSettleApply" resultType="com.yc.edsi.payment.SellerSettlePO">
+	 select ss.* from seller_settle_tab ss
+	  left join ecomInfo.seller_info_tab si on ss.sellerId = si.sellerId
+	 where (ss.settleStatus in('2','3','4','5'))
+	  <if test='pfType != null and pfType == "2"'>
+	  and ss.isCommPayee = '1'
+	  and ss.communityId = #{ss.communityId}
+	  </if>
+	  <if test='pfType != null and pfType == "1"'>
+	      <if test="ss.sellerName != null and ss.sellerName != ''">
+	      and si.sellerName like concat('%', #{ss.sellerName}, '%')
+	      </if>
+	      <if test="ss.isCommPayee != null and ss.isCommPayee != ''">
+	      and ss.isCommPayee = #{ss.isCommPayee}
+	      </if>
+		  <if test="ss.subcomId != null and ss.subcomId != ''">
+		  and ss.subcomId = #{ss.subcomId}
+		  </if>
+	  </if>
+	  <if test='pfType == null or pfType != "1" and pfType != "2"'>
+	  and 1 = 0
+	  </if>
+	 <if test="ss.settleStartMonth !=null and ss.settleStartMonth != ''">
+	   <![CDATA[ and ss.settleMonth >= #{ss.settleStartMonth} ]]>
+	 </if>
+	 <if test="ss.settleEndMonth !=null and ss.settleEndMonth != ''">
+	   <![CDATA[ and ss.settleMonth <= #{ss.settleEndMonth} ]]>
+	 </if>
+	 order by createTime desc
+	</select>
+	<select id="getFinishSettleSum" resultType="com.yc.edsi.payment.SellerSettlePO">
+	   select sum(ss.canSettleTotalAmount) as canSettleTotalAmount,
+	   sum(ss.tradeCommiAmount) as tradeCommiAmount,sum(ss.canSettleAmount) as canSettleAmount
+	   from seller_settle_tab ss
+	  left join ecomInfo.seller_info_tab si on ss.sellerId = si.sellerId
+	   where (ss.settleStatus in('2','3','4','5'))
+	  <if test='pfType != null and pfType == "2"'>
+	  and ss.isCommPayee = '1'
+	  and ss.communityId = #{ss.communityId}
+	  </if>
+	  <if test='pfType != null and pfType == "1"'>
+	      <if test="ss.sellerName != null and ss.sellerName != ''">
+	      and si.sellerName like concat('%', #{ss.sellerName}, '%')
+	      </if>
+	      <if test="ss.isCommPayee != null and ss.isCommPayee != ''">
+	      and ss.isCommPayee = #{ss.isCommPayee}
+	      </if>
+		  <if test="ss.subcomId != null and ss.subcomId != ''">
+		  and ss.subcomId = #{ss.subcomId}
+		  </if>
+	  </if>
+	  <if test='pfType == null or pfType != "1" and pfType != "2"'>
+	  and 1 = 0
+	  </if>
+	   <if test="ss.settleStartMonth !=null and ss.settleStartMonth != ''">
+	     <![CDATA[ and ss.settleMonth >= #{ss.settleStartMonth} ]]>
+	   </if>
+	   <if test="ss.settleEndMonth !=null and ss.settleEndMonth != ''">
+		 <![CDATA[ and ss.settleMonth <= #{ss.settleEndMonth} ]]>
+	   </if>
+	</select>
+	<sql id="sellerWaitSettleSql">
+	  <![CDATA[
+		SELECT
+			sst.*, ifnull(
+				total.totalTradeAmount,
+				0.00
+			) totalTradeAmount,
+			ifnull(total.totalTradeNum, 0) totalTradeNum,
+			settle.canSettleTotalAmount,
+			settle.canSettleNum,
+			"-1" AS settleStatus
+		FROM
+			(
+				SELECT
+					LEFT (sp.createTime, 7) settleMonth,
+					sp.communityId,
+					sp.sellerId,
+					sp.isCommPayee,
+					sp.subcomId
+				FROM
+					seller_payment_tab sp
+				WHERE
+					sp.flow = '1'
+				AND sp.applySettlement = '0'
+				AND sp.sellerId = #{sellerId}
+				AND sp.createTime < DATE_FORMAT(NOW(), '%Y-%m')
+				GROUP BY
+					LEFT (sp.createTime, 7),
+					sp.communityId,
+					sp.sellerId
+			) sst
+		LEFT JOIN (
+			SELECT
+				LEFT (opt.createTime, 7) settleMonth,
+				opt.communityId,
+				count(1) totalTradeNum,
+				ifnull(
+					sum(round(abs(opt.amount), 2)),
+					0.00
+				) totalTradeAmount
+			FROM
+				owner_payment_tab opt
+			WHERE
+				opt.flow = '0'
+			AND opt.sysUserOptFlag = '0'
+			AND opt.billNo IS NULL
+			AND opt.amount < 0
+			AND opt.sellerId = #{sellerId}
+			GROUP BY
+				LEFT (opt.createTime, 7),
+				opt.communityId
+		) total ON sst.settleMonth = total.settleMonth
+		AND sst.communityId = total.communityId
+		LEFT JOIN (
+			SELECT
+				LEFT (spt.createTime, 7) settleMonth,
+				spt.communityId,
+				count(1) canSettleNum,
+				ifnull(
+					sum(round(spt.amount, 2)),
+					0.00
+				) canSettleTotalAmount
+			FROM
+				seller_payment_tab spt
+			WHERE
+				spt.sellerId = #{sellerId}
+			AND spt.applySettlement = '0'
+			AND spt.finishSettlement = '0'
+			GROUP BY
+				LEFT (spt.createTime, 7),
+				spt.communityId
+		) settle ON sst.settleMonth = settle.settleMonth
+		AND sst.communityId = settle.communityId
+		WHERE
+			1 = 1
+	  ]]>
+	</sql>
+	<select id="getSellerWaitApplySettleList" resultType="com.yc.edsi.payment.SellerSettlePO">
+	   <include refid="sellerWaitSettleSql"/>
+	   order by sst.communityId,sst.settleMonth
+	</select>
+	<select id="getSellerWaitApplySettle" resultType="com.yc.edsi.payment.SellerSettlePO">
+	   <include refid="sellerWaitSettleSql"/>
+	   and sst.settleMonth = #{settleMonth}
+	   and sst.communityId = #{communityId}
+	</select>
+	<select id="getSellerSettle" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select * from seller_settle_tab where sellerSettleId = #{sellerSettleId}
+	</select>
+	<select id="getPlantformWaitApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		select ss.communityId,ss.communitySettleMonth settleMonth,sum(ss.totalTradeNum) ttNum,sum(ss.canSettleNum) csNum,
+        sum(ss.canSettleAmount) csAmount,sum(ss.canSettleTotalAmount) cstAmount,sum(ss.tradeCommiAmount) tcAmount,
+        ifnull(ap.advertProfit,0.00) advertProfit
+		from (
+			select DATE_FORMAT(bs.financeAgreeTime,'%Y-%m') communitySettleMonth, bs.* from seller_settle_tab bs 
+			where bs.platformApply = '0'  
+		  	and bs.SettleStatus in('1','3','4')
+		  	and DATE_FORMAT(bs.financeAgreeTime,'%Y-%m') <![CDATA[<]]> DATE_FORMAT(NOW(),'%Y-%m') 
+		  	and bs.isCommPayee = '1'
+  		    <if test="subcomId != null and subcomId != ''">
+		   	and bs.subcomId = #{subcomId}
+		    </if>
+		) ss left join (
+		    select ai.communityId,ai.subcomId,left(ai.createTime,7) settleMonth,sum(round(ai.advertAmount,2)-round(ai.outAmount,2)) advertProfit
+			from advert_income_tab ai where ai.settleApply = '0'
+		  	and ai.isCommPayee = '1'
+  		    <if test="subcomId != null and subcomId != ''">
+		   	and ai.subcomId = #{subcomId}
+		    </if>
+			group by ai.subcomId,ai.communityId,left(ai.createTime,7) 
+		) ap on ss.communityId = ap.communityId and ss.subcomId = ap.subcomId 
+		  and ss.communitySettleMonth = ap.settleMonth
+	    group by ss.communityId,ss.communitySettleMonth
+	    order by ss.communityId,ss.communitySettleMonth
+	</select>
+	<select id="getEEPWaitApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		select ss.communitySettleMonth settleMonth,ss.communityId,sum(ss.totalTradeNum) ttNum,sum(ss.canSettleNum) csNum,
+        sum(ss.canSettleAmount) csAmount,sum(ss.canSettleTotalAmount) cstAmount,sum(ss.tradeCommiAmount) tcAmount,
+        ifnull(ap.advertProfit,0.00) advertProfit
+		from (
+			select DATE_FORMAT(bs.sellerSubmitTime,'%Y-%m') communitySettleMonth, bs.* from seller_settle_tab bs 
+			where bs.platformApply = '0'
+		  	and bs.SettleStatus in('0','1','3','4')
+		  	and DATE_FORMAT(bs.sellerSubmitTime,'%Y-%m') <![CDATA[<]]> DATE_FORMAT(NOW(),'%Y-%m')
+		  	and bs.isCommPayee = '0'
+		   	and bs.communityId = #{communityId}
+		) ss left join (
+		    select ai.communityId,ai.subcomId,left(ai.createTime,7) settleMonth,sum(round(ai.advertAmount,2)-round(ai.outAmount,2)) advertProfit
+			from advert_income_tab ai where ai.settleApply = '0'
+		  	and ai.isCommPayee = '0'
+		   	and ai.communityId = #{communityId}
+			group by ai.subcomId,ai.communityId,left(ai.createTime,7) 
+		) ap on ss.communityId = ap.communityId and ss.subcomId = ap.subcomId 
+		  and ss.communitySettleMonth = ap.settleMonth
+	    group by ss.communityId,ss.communitySettleMonth
+	    order by ss.communityId,ss.communitySettleMonth
+	</select>
+	<select id="getPfUnSettleDetail" resultType="com.yc.edsi.payment.SellerSettlePO">
+	   select ss.* from seller_settle_tab ss where ss.communityId = #{communityId}
+	   and ss.settleStatus in ('1','3','4') and DATE_FORMAT(ss.financeAgreeTime,'%Y-%m') = #{settleMonth}
+	   and ss.platformApply = '0'
+	   order by ss.communityId,ss.sellerId
+	</select>
+	<select id="getEEPUnSettleDetail" resultType="com.yc.edsi.payment.SellerSettlePO">
+	   select ss.* from seller_settle_tab ss where ss.communityId = #{communityId}
+	   and ss.settleStatus in ('0','1','3','4') and DATE_FORMAT(ss.sellerSubmitTime,'%Y-%m') = #{settleMonth}
+	   and ss.platformApply = '0'
+	   order by ss.communityId,ss.sellerId
+	</select>
+	<select id="getPfSettleDetail" resultType="com.yc.edsi.payment.SellerSettlePO">
+	  select ss.* from seller_settle_tab ss,plantform_settle_tab ps,plantform_settle_detail_tab psd
+      where ps.plantformSettleId = psd.plantformSettleId and ss.sellerSettleId = psd.sellerSettleId
+      and ss.settleStatus in ('0','1','3','4') and ps.plantformSettleId = #{plantformSettleId}
+      order by ss.communityId,ss.curSettleTime desc,ss.createTime desc 
+	</select>
+	<insert id="insertPlantformSettle">
+	 insert into plantform_settle_tab(plantformSettleId,communityId,communityName,plantformSubmitTime,settleStatus,
+	 totalTradeNum,canSettleNum,canSettleAmount,needSettleAmount,commissionProfit,advertProfit,totalProfit,plantformProfit,
+	 communityProfit,communityPercent,createTime,settleMonth,subcomId,isCommPayee)
+	 values(#{pfSettle.plantformSettleId,jdbcType=INTEGER}, #{pfSettle.communityId,jdbcType=INTEGER}, #{pfSettle.communityName,jdbcType=VARCHAR},
+	  #{pfSettle.plantformSubmitTime,jdbcType=TIMESTAMP},#{pfSettle.settleStatus,jdbcType=VARCHAR}, #{pfSettle.totalTradeNum,jdbcType=INTEGER},
+	  #{pfSettle.canSettleNum,jdbcType=INTEGER},#{pfSettle.canSettleAmount,jdbcType=DOUBLE}, #{pfSettle.needSettleAmount,jdbcType=DOUBLE},
+	  #{pfSettle.commissionProfit,jdbcType=DOUBLE},#{pfSettle.advertProfit,jdbcType=DOUBLE}, #{pfSettle.totalProfit,jdbcType=DOUBLE},
+	  #{pfSettle.plantformProfit,jdbcType=DOUBLE},#{pfSettle.communityProfit,jdbcType=DOUBLE}, #{pfSettle.communityPercent,jdbcType=DOUBLE},
+	  #{pfSettle.createTime,jdbcType=TIMESTAMP},#{pfSettle.settleMonth,jdbcType=VARCHAR},#{pfSettle.subcomId,jdbcType=VARCHAR},
+	  #{pfSettle.isCommPayee,jdbcType=VARCHAR})
+	</insert>
+	<insert id="batchInsertPFSettleDetail">
+	    insert into plantform_settle_detail_tab(plantformSettleDetailId,plantformSettleId,sellerSettleId) values
+		<foreach collection="psdList" item="item" index="index" separator=",">
+			(#{item.plantformSettleDetailId},#{item.plantformSettleId},#{item.sellerSettleId})
+		</foreach>
+	</insert>
+	<update id="pfBatchUpdateSellerSatus">
+	   <![CDATA[
+		 update seller_settle_tab ss set ss.platformApply = '1' where ss.communityId = #{communityId}
+		 and ss.settleStatus in ('1','3','4') and DATE_FORMAT(ss.financeAgreeTime,'%Y-%m') = #{settleMonth}
+	  ]]>
+	</update>
+	<update id="eepBatchUpdateSellerSatus">
+	   <![CDATA[
+		 update seller_settle_tab ss set ss.platformApply = '1' where ss.communityId = #{communityId}
+		 and ss.settleStatus in ('0','1','3','4') and DATE_FORMAT(ss.sellerSubmitTime,'%Y-%m') = #{settleMonth}
+	  ]]>
+	</update>
+	<select id="getPfHandleSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus !='4' 
+	   and ps.isCommPayee = '1'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	   and ps.settleMonth <![CDATA[<=]]> '2014-12'
+	  order by createTime desc 
+	</select>
+	<select id="getEEPHandleSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus !='4' 
+	   and ps.isCommPayee = '0'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	  order by createTime desc 
+	</select>
+	<select id="getPfFinishSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus ='4' 
+	   and ps.isCommPayee = '1'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	   and ps.settleMonth <![CDATA[<=]]> '2014-12'
+	   order by createTime desc 
+	</select>
+	<select id="getEEPFinishSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus ='4' 
+	   and ps.isCommPayee = '0'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	   order by createTime desc 
+	</select>
+	<select id="getRelatedSellerSettleApply" resultType="com.yc.edsi.payment.SellerSettlePO">
+   	  select ss.* from plantform_settle_tab ps,plantform_settle_detail_tab psd,
+	  seller_settle_tab ss where ps.plantformSettleId = psd.plantformSettleId
+	  and psd.sellerSettleId = ss.sellerSettleId and ss.platformApply = '1' 
+	  and ps.plantformSettleId = #{plantformSettleId} order by ss.createTime desc
+	</select>
+	<select id="getPlantformSettle"  resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.plantformSettleId = #{plantformSettleId} 
+	</select>
+	<update id="updatePfSettle">
+	 update plantform_settle_tab set financeAgreeTime = #{pfSettle.financeAgreeTime,jdbcType=TIMESTAMP},
+	 financeSureTime = #{pfSettle.financeSureTime,jdbcType=TIMESTAMP}, financeRefuseTime = #{pfSettle.financeRefuseTime,jdbcType=TIMESTAMP},
+	 financeRefuseReason = #{pfSettle.financeRefuseReason,jdbcType=VARCHAR}, plantformSureTime = #{pfSettle.plantformSureTime,jdbcType=TIMESTAMP},
+	 plantformDissentTime = #{pfSettle.plantformDissentTime,jdbcType=TIMESTAMP}, plantformDissentReason = #{pfSettle.plantformDissentReason,jdbcType=VARCHAR},
+	 settleStatus = #{pfSettle.settleStatus,jdbcType=VARCHAR}, memo = #{pfSettle.memo,jdbcType=VARCHAR}
+	 where plantformSettleId = #{pfSettle.plantformSettleId,jdbcType=INTEGER} 
+	</update>
+	<select id="getPfApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		select ss.communityId,ss.communitySettleMonth settleMonth,sum(ss.totalTradeNum) ttNum,sum(ss.canSettleNum) csNum,
+        sum(ss.canSettleAmount) csAmount,sum(ss.canSettleTotalAmount) cstAmount,sum(ss.tradeCommiAmount) tcAmount,
+        ifnull(ap.advertProfit,0.00) advertProfit,ss.isCommPayee
+		from (
+			select DATE_FORMAT(bs.financeAgreeTime,'%Y-%m') communitySettleMonth, bs.* from seller_settle_tab bs 
+			where bs.platformApply = '0' 
+			and bs.SettleStatus in('1','3','4') and DATE_FORMAT(bs.financeAgreeTime,'%Y-%m') = #{settleMonth}
+			and bs.communityId = #{communityId} 
+		) ss 
+		left join (
+		    select ai.communityId,sum(round(ai.advertAmount,2)-round(ai.outAmount,2)) advertProfit,
+			left(ai.createTime,7) settleMonth from advert_income_tab ai where ai.settleApply = '0'
+			and ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth}
+			group by ai.communityId,left(ai.createTime,7)
+		) ap on ss.communityId = ap.communityId and ss.communitySettleMonth = ap.settleMonth 
+	    group by ss.communityId,ss.communitySettleMonth
+	</select>
+	<select id="getEEPApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		select ss.communityId,ss.communitySettleMonth settleMonth,sum(ss.totalTradeNum) ttNum,sum(ss.canSettleNum) csNum,
+        sum(ss.canSettleAmount) csAmount,sum(ss.canSettleTotalAmount) cstAmount,sum(ss.tradeCommiAmount) tcAmount,
+        ifnull(ap.advertProfit,0.00) advertProfit,ss.isCommPayee
+		from (
+			select DATE_FORMAT(bs.sellerSubmitTime,'%Y-%m') communitySettleMonth, bs.* from seller_settle_tab bs 
+			where bs.platformApply = '0' 
+			and bs.settleStatus in ('0','1','3','4') and DATE_FORMAT(bs.sellerSubmitTime,'%Y-%m') = #{settleMonth}
+			and bs.communityId = #{communityId}
+		) ss 
+		left join (
+		    select ai.communityId,sum(round(ai.advertAmount,2)-round(ai.outAmount,2)) advertProfit,
+			left(ai.createTime,7) settleMonth from advert_income_tab ai where ai.settleApply = '0'
+			and ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth}
+			group by ai.communityId,left(ai.createTime,7)
+		) ap on ss.communityId = ap.communityId and ss.communitySettleMonth = ap.settleMonth
+	    group by ss.communityId,ss.communitySettleMonth
+	</select>
+	
+	<select id="getSettledOrderIds" resultType="Long">
+		select orderId
+		from seller_payment_tab
+		where orderId in
+		<foreach collection="orderIds" item="orderId" close=")" open="(" separator=",">
+			#{orderId}
+		</foreach>
+		AND finishSettlement = '1'
+	</select>
+	<select id="getAccount" resultType="com.yc.edsi.payment.OwnerAccount">
+	    select sum(amt.moneyAmt) moneyAmt,sum(amt.preferentialAmt) preferentialAmt from (
+		  select ifnull(sum(round(amount,2)),0.00) moneyAmt,0.00 preferentialAmt from owner_payment_tab 
+		  where communityId=#{communityId} and ownerId=#{ownerId} and preferentialFlag = 0
+		  union all
+		  select ifnull(sum(round(cash,2)),0.00) moneyAmt,ifnull(sum(round(extCash,2)),0.00) preferentialAmt 
+		  from owner_payment_tab where communityId=#{communityId} and ownerId=#{ownerId} and preferentialFlag = 1
+		) amt 
+	</select>
+	<select id="getSellerPaymentByOrderId" resultType="com.yc.edsi.payment.SellerPaymentPO">
+	  select * from seller_payment_tab where orderId = #{orderId}
+	</select>
+	<delete id="delCashPayment">
+	  delete from owner_payment_tab where ownerId = #{ownerId} and cashId = #{cashId} and communityId=#{communityId}
+	  and cashSendType = #{cashSendType} and amount > 0 and extCash > 0
+	</delete>
+	<delete id="delOwnerPayment">
+	  delete from owner_payment_tab where paymentId = #{paymentId} and communityId=#{communityId}
+	</delete>
+	<delete id="delSellerPayment">
+	  delete from seller_payment_tab where oPaymentId = #{oPaymentId} and orderId = #{orderId}
+	</delete>
+	<select id="getAdvertIncomeList" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	 select * from advert_income_tab 
+	 where payeeId = #{ai.payeeId}
+	 <if test="ai.subcomId != null and ai.subcomId != ''">
+	 and subcomId = #{ai.subcomId}
+	 </if>
+	 <if test="ai.communityName != null and ai.communityName != ''">
+	    and (
+		    advertMaster like CONCAT('%',#{ai.communityName},'%')
+		    or
+		    advertRegion like CONCAT('%',#{ai.communityName},'%')
+		    or
+		    communityName like CONCAT('%',#{ai.communityName},'%')
+	    )
+	 </if>
+	</select>
+	<select id="getAdvertIncomesByCommId" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	  select * from advert_income_tab
+	  where communityId = #{ai.communityId}
+	</select>
+	<select id="getAdvertIncomeById" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	   select * from advert_income_tab where id = #{id}
+	</select>
+	<insert id="insertAdvertIncome">
+	  insert into advert_income_tab(id,advertMaster,advertSummary,advertRegion,advertAmount,communityId,
+	  communityName,payTime,advertEffectTime,advertLoseTime,payeeId,payeeName,outAmount,createTime,settleApply,subcomId,isCommPayee) 
+	  values(#{ai.id},#{ai.advertMaster},#{ai.advertSummary},#{ai.advertRegion},#{ai.advertAmount},
+	  #{ai.communityId},#{ai.communityName},#{ai.payTime},#{ai.advertEffectTime},#{ai.advertLoseTime},
+	  #{ai.payeeId},#{ai.payeeName},#{ai.outAmount},#{ai.createTime},'0',#{ai.subcomId},#{ai.isCommPayee})
+	</insert>
+	<update id="updateAdvertIncome">
+	  update advert_income_tab set 
+	  advertMaster = #{ai.advertMaster},advertSummary = #{ai.advertSummary},advertRegion = #{ai.advertRegion},
+	  advertAmount = #{ai.advertAmount},communityId = #{ai.communityId},communityName = #{ai.communityName},
+	  payTime = #{ai.payTime},advertEffectTime = #{ai.advertEffectTime},advertLoseTime = #{ai.advertLoseTime},
+	  outAmount = #{ai.outAmount}
+	  where id = #{ai.id}
+	</update>
+	<insert id="insertAdvertOut">
+	  insert into advert_out_tab(adIncomeId,outAmt,outUrl) 
+	  values(#{ao.adIncomeId},#{ao.outAmt},#{ao.outUrl})
+	</insert>
+	<update id="updateAdvertOut">
+	  update advert_out_tab set outAmt = #{ao.outAmt},outUrl = #{ao.outUrl}
+	  where id = #{ao.id}
+	</update>
+	<select id="getAdvertOutByIncomeId" resultType="com.yc.edsi.payment.AdvertOut">
+	  select * from advert_out_tab where adIncomeId = #{adIncomeId} order by id
+	</select>
+	<select id="getSettleAdvertIncomeList" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	  select * from advert_income_tab ai where ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth}
+	  and ai.settleApply = '0' 
+	</select>
+	<insert id="batchInsertPFAdvertSettle">
+	     insert into plantform_settle_advert_tab(plantformAdvertSettleId,plantformSettleId,AdvertIncomeId) values
+		<foreach collection="psaList" item="item" index="index" separator=",">
+			(#{item.plantformAdvertSettleId},#{item.plantformSettleId},#{item.AdvertIncomeId})
+		</foreach>
+	</insert>
+	<update id="batchUpdateAdvertIncomeStatus">
+	    <![CDATA[
+          UPDATE advert_income_tab ai set ai.settleApply = #{settleApply},ai.settleTime = date_format(now(),'%Y-%m-%d %H:%i:%s')
+          where ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth} and ai.settleApply != '2'
+        ]]>
+	</update>
+	<select id="getPfUnSettleAdvertList" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	  select * from advert_income_tab ai where ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth}
+	  and ai.settleApply = '0' order by ai.communityId,ai.createTime desc
+	</select>
+	<select id="getPfSettleAdvertList" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	  select ai.* from advert_income_tab ai,plantform_settle_tab ps,plantform_settle_advert_tab psa
+      where ps.plantformSettleId = psa.plantformSettleId and ai.id = psa.AdvertIncomeId
+      and ai.settleApply in ('1','2') and ps.plantformSettleId = #{plantformSettleId}
+      order by ai.communityId,ai.createTime desc 
+	</select>
+	<select id="getTotalAdvertByComMonth" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	   select ifnull(sum(round(ai.advertAmount,2)),0.00) advertAmount,ifnull(sum(round(ai.outAmount,2)),0.00) outAmount 
+	   from advert_income_tab ai where ai.communityId = #{communityId} and left(ai.createTime,7) = #{settleMonth}
+	   and ai.settleApply = '0'
+	</select>
+	<select id="getTotalAdvertByPfSettle" resultType="com.yc.edsi.payment.AdvertIncomePO">
+	  select ifnull(sum(round(ai.advertAmount,2)),0.00) advertAmount,ifnull(sum(round(ai.outAmount,2)),0.00) outAmount 
+	  from advert_income_tab ai,plantform_settle_tab ps,plantform_settle_advert_tab psa
+      where ps.plantformSettleId = psa.plantformSettleId and ai.id = psa.AdvertIncomeId
+      and ai.settleApply in ('1','2') and ps.plantformSettleId = #{plantformSettleId}
+	</select>
+
+	<select id="statAdvert" resultType="com.yc.edsi.count.CountPO">
+		SELECT
+			communityId,
+            <if test='osqc.statType == null or osqc.statType == "" or osqc.statType == "2"'>
+			LEFT(createTime, #{osqc.conditionPeriod}) AS createTime,
+			</if>
+            COUNT(*) AS orderCount,
+			SUM(advertAmount) AS sumActualPayment,
+			SUM(advertAmount) AS commission,
+			SUM(outAmount) AS sumSentryDeliveryPrice,
+			1 AS detailType
+		FROM
+            advert_income_tab
+        WHERE 1 = 1
+	        <if test="osqc.endCreateTime != null and osqc.endCreateTime != ''">
+		        <if test='osqc.conditionPeriod == 10'>
+		        AND createTime <![CDATA[<=]]> CONCAT(#{osqc.endCreateTime},' 23:59:59')
+		        </if>
+		        <if test='osqc.conditionPeriod == 7'>
+		        AND createTime <![CDATA[<=]]> CONCAT(#{osqc.endCreateTime},'-31 23:59:59')
+		        </if>
+	        </if>
+	        <if test="osqc.startCreateTime != null and osqc.startCreateTime != ''">
+		        <if test='osqc.conditionPeriod == 10'>
+		        AND createTime >= CONCAT(#{osqc.startCreateTime},' 00:00:00')
+		        </if>
+		        <if test='osqc.conditionPeriod == 7'>
+		        AND createTime >= CONCAT(#{osqc.startCreateTime},'-01 00:00:00')
+		        </if>
+	        </if>
+            <if test="osqc.communityId != null and osqc.communityId != ''">
+            AND communityId = #{osqc.communityId}
+            </if>
+            <if test="osqc.subcomId != null and osqc.subcomId != ''">
+            AND subcomId = #{osqc.subcomId}
+            </if>
+		GROUP BY 
+	        <if test='osqc.statType == null or osqc.statType == ""'>
+	        communityId,left (createTime,#{osqc.conditionPeriod})
+	        </if>
+	        <if test='osqc.statType != null and osqc.statType == "1"'>
+	        communityId
+	        </if>
+	        <if test='osqc.statType != null and osqc.statType == "2"'>
+	        left (createTime,#{osqc.conditionPeriod})
+	        </if>
+        <if test='osqc.statType == null or osqc.statType == "" or osqc.statType == "2"'>
+		ORDER BY createTime desc
+		</if>
+	</select>
+	<select id="checkIfAlreadyPay" resultType="int">
+	  select count(1) cnt from owner_payment_tab where orderId = #{orderId} and communityId = #{communityId}
+	</select>
+	<select id="checkSellerIsSubmitted" resultType="int">
+	  select count(1) cnt from seller_settle_tab where communityId = #{communityId} 
+	  and settleMonth = #{settleMonth} and sellerId = #{sellerId}
+	</select>
+
+	<update id="updateSettleByOpid">
+		update settle_tab A, seller_payment_tab B
+		set A.canSettleNum = A.canSettleNum - 1, A.canSettleTotalAmount = round(A.canSettleTotalAmount - B.amount, 2), 
+		A.tradeCommiAmount = round((A.canSettleTotalAmount - B.amount) * A.commissionPercent, 2),
+		A.canSettleAmount = round((A.canSettleTotalAmount - B.amount) * (1 - A.commissionPercent), 2)
+		where A.settleDate = left(B.createTime, 10) and A.sellerId = B.sellerId and A.communityId = B.communityId
+		and B.oPaymentId = #{oPaymentId} and B.orderId = #{orderId}
+	</update>
+</mapper>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.IPayablesHistoryDao">
+	<insert id="insertPayablesHistory" parameterType="com.yc.edsi.payment.PayablesHistoryPO">
+		insert into payables_history_tab(communityId,propertyId,payablesStartTime,payablesEndTime,payableStatus,createTime,createUser,confirmTime,confirmUser)
+		values(#{communityId},#{propertyId},#{payablesStartTime},#{payablesEndTime},#{payableStatus},#{createTime},#{createUser},#{confirmTime},#{confirmUser})
+	</insert>
+	<select id="getPayablesHistory" parameterType="com.yc.edsi.payment.PayablesHistoryPO"
+		resultType="com.yc.edsi.payment.PayablesHistoryPO">
+		SELECT * from payables_history_tab
+		<where>
+			<if test="communityId != null and communityId > -1">
+				and communityId = #{communityId}
+			</if>
+			<if test="propertyId != null and propertyId > -1">
+				and propertyId = #{propertyId}
+			</if>
+			<if test="payablesStartTime != null and payablesStartTime != ''">
+				and payablesStartTime = #{payablesStartTime}
+			</if>
+			<if test="payableStatus != null and payableStatus >-1">
+				and payableStatus = #{payableStatus}
+			</if>
+			<if test="payablesEndTime != null and payablesEndTime != ''">
+				and payablesEndTime = #{payablesEndTime}
+			</if>
+			<if test="createUser != null and createUser != ''">
+				and createUser = #{createUser}
+			</if>			
+			<if test="rangePropertyIds != '-1'">
+		        and propertyId in 
+		        <foreach collection="propertyIds" item="it" open="(" close=")" separator=",">
+		        #{it}
+		        </foreach>
+		    </if>
+			<if test="rangePropertyIds == null or rangePropertyIds == ''">
+			   and 1 > 2
+			</if>
+		</where>
+	</select >
+	
+	<select id="getLastPayableTime"  parameterType="com.yc.edsi.payment.PayablesHistoryPO" resultType="string">
+		SELECT  IFNULL(MAX(payablesEndTime),'1970-01-21 00:00:01')  from payables_history_tab
+			where communityId = #{communityId}
+			and propertyId = #{propertyId}
+	</select>
+	<select id="getHistoryStatisticsDetail" parameterType="long" resultType="com.yc.edsi.payment.OwnerPaymentStatisticsPO">
+		<![CDATA[
+			SELECT 
+				ot.propertyId,
+				ot.ownerName,
+				ot.paymentId as id,
+				ot.billNo,
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 AND cash >0    AND billNo IS NOT NULL AND payType='现金') THEN cash 
+				END as 'moneyIn1', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 AND cash >0    AND billNo IS NOT NULL AND payType='支付宝') THEN cash
+				END as 'moneyIn2',
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 AND cash >0    AND billNo IS NOT NULL AND payType='银联') THEN cash
+				END as 'moneyIn3', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 AND cash >0    AND billNo IS NOT NULL AND payType='转账') THEN cash
+				END as 'moneyIn4', 
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 0 AND amount <0  AND billNo IS NOT NULL) THEN amount
+				END as 'moneyIn5',
+				CASE
+						WHEN ((sysUserOptFlag ='1' OR sysUserOptFlag ='2') AND flow = 0 AND amount <0  AND billNo IS NULL) THEN amount
+				END as 'moneyIn6', 
+				CASE
+						WHEN (sysUserOptFlag ='0' AND flow = 0 AND amount <0  AND billNo IS NULL) THEN amount
+				END as 'moneyIn7',
+				CASE
+						WHEN (sysUserOptFlag ='1' AND flow = 1 AND extcash >0) THEN extCash
+				END as 'moneyIn8',
+				ot.createTime,
+				ot.createUser,
+				ot.des
+			from owner_payment_tab ot
+			LEFT JOIN payables_history_tab pht
+			ON ot.communityId = pht.communityId AND ot.propertyId = pht.propertyId
+			WHERE ot.communityId = #{communityId} AND pht.listId = #{listId}
+				AND ot.createTime >= pht.payablesStartTime
+				AND ot.createTime < pht.payablesEndTime
+			GROUP BY ot.ownerId,ot.paymentId
+			ORDER BY ot.createTime DESC
+		]]>
+    </select>
+    <select id="getPayablesHistoryById" resultType="com.yc.edsi.payment.PayablesHistoryPO">
+      select * from payables_history_tab where listId = #{listId}
+    </select>
+    <select id="getLastPayable" resultType="com.yc.edsi.payment.PayablesHistoryPO">
+      SELECT * from payables_history_tab where communityId = #{phs.communityId} and propertyId = #{phs.propertyId}
+      order by listId desc limit 0,1
+    </select>
+    <delete id="deletetPayablesHistoryById">
+      delete from payables_history_tab where listId = #{listId}
+    </delete>
+    <update id="confirmPayable" parameterType="com.yc.edsi.payment.PayablesHistoryPO">
+    	update payables_history_tab set payableStatus = #{payableStatus},confirmTime = #{confirmTime},
+    	confirmUser = #{confirmUser} where listId = #{listId} and payableStatus = 1
+    </update>
+</mapper>

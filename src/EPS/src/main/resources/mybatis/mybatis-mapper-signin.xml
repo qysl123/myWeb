@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.score.IOwnerSigninDao">
+	<insert id="add" parameterType="com.yc.edsi.payment.score.OwnerSigninPO">
+		INSERT INTO owner_signin_tab
+		(
+		ownerId,
+		signinTime,
+		contSignedTimes
+		)
+		VALUES
+		(
+		#{ownerId},
+		DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s'),
+		#{contSignedTimes}
+		)
+	</insert>
+	
+	<select id="getByOwnerId" parameterType="long" resultType="com.yc.edsi.payment.score.OwnerSigninPO">
+		SELECT *, DATE_ADD(LEFT(signinTime, 10), INTERVAL 1 DAY) nextSigninDate FROM owner_signin_tab
+		WHERE ownerId = #{ownerId}
+	</select>
+	
+	<update id="update" parameterType="com.yc.edsi.payment.score.OwnerSigninPO">
+		UPDATE owner_signin_tab
+		SET signinTime = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s'),
+		contSignedTimes = #{contSignedTimes}
+		WHERE ownerId = #{ownerId}
+	</update>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.score.IScoreTaskDao">
+	<select id="getScoreTaskList" resultType="com.yc.edsi.payment.score.ScoreTaskPO">
+	  select * from score_task_tab order by isRepeatable desc, taskId
+	</select>
+	
+	<update id="changeTaskScore" parameterType="com.yc.edsi.payment.score.ScoreTaskPO">
+	  update score_task_tab
+	  set taskScore = #{taskScore}, 
+	    updateUser = #{updateUser}, 
+	    updateTime = DATE_FORMAT(NOW(),'%Y-%m-%d %H:%i:%s')
+	  where taskId = #{taskId}
+	</update>
+	
+	<select id="getOwnerScoreTasks" resultType="com.yc.edsi.payment.score.ScoreTaskPO">
+		select a.* from (
+		select st.*,
+		(select count(1) from owner_score_tab where taskId = 1 and ownerId = #{ownerId} and communityId = #{communityId} and createTime like concat(date_format(now(),'%Y-%m-%d'), '%')) isDone
+		from score_task_tab st
+		where optUri = 'signin_ordinary'
+		union all
+		select st.*,if(os.taskId is not null, 1, 0) isDone from score_task_tab st
+		left join (select * from owner_score_tab where ownerId = #{ownerId} and communityId = #{communityId}) os
+		on st.taskId = os.taskId
+		where isRepeatable = 0 and optUri not like 'signin%' and optUri != 'buy_cleaning' and optUri != '/ECP/yc/register.do'
+		union all
+		select st.*,2 isDone from score_task_tab st
+		where isRepeatable = 1  and optUri not like 'signin%' and optUri != 'invite_success'
+		) a where 1 = 1
+		<if test="doneStatus != null and doneStatus > -1">
+			and isDone = #{doneStatus}
+		</if>
+		order by isRepeatable desc, taskId
+	</select>
+</mapper>

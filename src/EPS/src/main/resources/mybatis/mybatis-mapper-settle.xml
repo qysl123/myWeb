@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.payment.ISettleDao">
+	<sql id="sellerWaitApplySettleSql">
+		SELECT
+			LEFT (st.settleDate, 7) settleMonth,
+			st.sellerId,
+			st.communityId,
+			sum(st.canSettleNum) canSettleNum,
+			round(
+				sum(st.canSettleTotalAmount),
+				2
+			) canSettleTotalAmount,
+			sum(st.totalTradeNum) totalTradeNum,
+			st.isCommPayee,
+			st.subcomId,
+			round(sum(st.tradeCommiAmount), 2) tradeCommiAmount,
+			round(sum(st.canSettleAmount), 2) canSettleAmount,
+			st.commissionPercent
+		FROM
+			settle_tab st
+		WHERE
+			st.sellerApply = '0'
+		AND st.isCommPayee = '1'
+		AND st.settleDate <![CDATA[<]]> DATE_FORMAT(NOW(),'%Y-%m')
+		AND st.settleDate <![CDATA[<]]> '2016-03'
+		AND st.sellerId = #{sellerId}
+		GROUP BY
+			LEFT (st.settleDate, 7),
+			st.communityId
+		UNION ALL
+			SELECT
+				LEFT (st.settleDate, 7) settleMonth,
+				st.sellerId,
+				- 1 communityId,
+				sum(st.canSettleNum) canSettleNum,
+				round(
+					sum(st.canSettleTotalAmount),
+					2
+				) canSettleTotalAmount,
+				sum(st.totalTradeNum) totalTradeNum,
+				st.isCommPayee,
+				st.subcomId,
+				round(sum(st.tradeCommiAmount), 2) tradeCommiAmount,
+				round(sum(st.canSettleAmount), 2) canSettleAmount,
+				st.commissionPercent
+			FROM
+				settle_tab st
+			WHERE
+				st.sellerApply = '0'
+			AND st.isCommPayee = '0'
+			AND st.settleDate <![CDATA[<]]> DATE_FORMAT(NOW(),'%Y-%m')
+			AND st.settleDate <![CDATA[<]]> '2016-03'
+			AND st.sellerId = #{sellerId}
+			GROUP BY
+				LEFT (st.settleDate, 7)
+	</sql>
+	<select id="getSellerWaitApplySettleList" resultType="com.yc.edsi.payment.SellerSettlePO">
+		<include refid="sellerWaitApplySettleSql"/>
+		ORDER BY settleMonth desc,communityId
+	</select>
+	<select id="getSellerWaitApplySettle" resultType="com.yc.edsi.payment.SellerSettlePO">
+		SELECT * FROM (
+		<include refid="sellerWaitApplySettleSql"/>
+		) sst
+		WHERE settleMonth = #{settleMonth} AND communityId = #{communityId}
+	</select>
+    
+    <update id="batchUpdateApplyStatus">
+		UPDATE settle_tab st set st.sellerApply = '1'
+		where st.sellerId = #{sellerId} 
+		<if test="communityId != null and communityId > -1">
+		and st.isCommPayee = '1' and st.communityId  = #{communityId}
+		</if>
+		<if test="communityId != null and communityId == -1">
+		and st.isCommPayee = '0'
+		</if>
+		and left(st.settleDate,7) = #{settleMonth} 
+		and st.sellerApply = '0'
+    </update>
+    
+	<select id="getPlantformWaitApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		SELECT
+			ss.communityId,
+			ss.settleMonth,
+			ss.totalTradeNum ttNum,
+			ss.canSettleNum csNum,
+			ss.canSettleAmount csAmount,
+			ss.canSettleTotalAmount cstAmount,
+			ss.tradeCommiAmount tcAmount,
+			ifnull(ap.advertProfit, 0.00) advertProfit
+		FROM
+			(
+				SELECT
+					LEFT(st.settleDate, 7) settleMonth,
+					st.communityId,
+					st.subcomId,
+					sum(st.totalTradeNum) totalTradeNum,
+					sum(st.canSettleNum) canSettleNum,
+					round(sum(st.canSettleAmount), 2) canSettleAmount,
+					round(sum(st.canSettleTotalAmount), 2) canSettleTotalAmount,
+					round(sum(st.tradeCommiAmount),2 ) tradeCommiAmount
+				FROM
+					settle_tab st
+				WHERE
+					st.platformApply = '0'
+				AND st.isCommPayee = '1'
+				AND LEFT(st.settleDate, 7) <![CDATA[<]]> DATE_FORMAT(NOW(), '%Y-%m')
+	  		    <if test="subcomId != null and subcomId != ''">
+			   	AND st.subcomId = #{subcomId}
+			    </if>
+				GROUP BY
+					st.subcomId,
+					st.communityId,
+					LEFT (st.settleDate, 7)
+			) ss
+		LEFT JOIN (
+			SELECT
+				ai.communityId,
+				ai.subcomId,
+				LEFT (ai.createTime, 7) settleMonth,
+				sum(
+					round(ai.advertAmount, 2) - round(ai.outAmount, 2)
+				) advertProfit
+			FROM
+				advert_income_tab ai
+			WHERE
+				ai.settleApply = '0'
+			AND ai.isCommPayee = '1'
+  		    <if test="subcomId != null and subcomId != ''">
+		   	AND ai.subcomId = #{subcomId}
+		    </if>
+			GROUP BY
+				ai.subcomId,
+				ai.communityId,
+				LEFT (ai.createTime, 7)
+		) ap ON ss.communityId = ap.communityId
+		AND ss.subcomId = ap.subcomId
+		AND ss.settleMonth = ap.settleMonth
+		ORDER BY
+			ss.communityId,
+			ss.settleMonth
+	</select>
+    
+	<select id="getEEPWaitApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		SELECT
+			ss.settleMonth,
+			ss.communityId,
+			ss.totalTradeNum ttNum,
+			ss.canSettleNum csNum,
+			ss.canSettleAmount csAmount,
+			ss.canSettleTotalAmount cstAmount,
+			ss.tradeCommiAmount tcAmount,
+			ifnull(ap.advertProfit, 0.00) advertProfit
+		FROM
+			(
+				SELECT
+					LEFT(st.settleDate, 7) settleMonth,
+					st.communityId,
+					st.subcomId,
+					sum(st.totalTradeNum) totalTradeNum,
+					sum(st.canSettleNum) canSettleNum,
+					round(sum(st.canSettleAmount), 2) canSettleAmount,
+					round(sum(st.canSettleTotalAmount), 2) canSettleTotalAmount,
+					round(sum(st.tradeCommiAmount),2 ) tradeCommiAmount
+				FROM
+					settle_tab st
+				WHERE
+					st.platformApply = '0'
+				AND st.isCommPayee = '0'
+				AND LEFT(st.settleDate, 7) <![CDATA[<]]> DATE_FORMAT(NOW(), '%Y-%m')
+  		    	<if test="communityId != null and communityId != ''">
+				AND st.communityId = #{communityId}
+		    	</if>
+				GROUP BY
+					st.subcomId,
+					st.communityId,
+					LEFT (st.settleDate, 7)
+			) ss
+		LEFT JOIN (
+			SELECT
+				ai.communityId,
+				ai.subcomId,
+				LEFT (ai.createTime, 7) settleMonth,
+				sum(
+					round(ai.advertAmount, 2) - round(ai.outAmount, 2)
+				) advertProfit
+			FROM
+				advert_income_tab ai
+			WHERE
+				ai.settleApply = '0'
+			AND ai.isCommPayee = '0'
+  		    <if test="communityId != null and communityId != ''">
+			AND ai.communityId = #{communityId}
+		    </if>
+			GROUP BY
+				ai.subcomId,
+				ai.communityId,
+				LEFT (ai.createTime, 7)
+		) ap ON ss.communityId = ap.communityId
+		AND ss.subcomId = ap.subcomId
+		AND ss.settleMonth = ap.settleMonth
+		ORDER BY
+			ss.communityId,
+			ss.settleMonth
+	</select>
+	
+	<select id="getPlatformSettleDetail" resultType="com.yc.edsi.payment.SellerSettlePO">
+		SELECT
+			LEFT (st.settleDate, 7) settleMonth,
+			st.sellerId,
+			st.communityId,
+			sum(st.canSettleNum) canSettleNum,
+			round(
+				sum(st.canSettleTotalAmount),
+				2
+			) canSettleTotalAmount,
+			sum(st.totalTradeNum) totalTradeNum,
+			st.isCommPayee,
+			st.subcomId,
+			round(sum(st.tradeCommiAmount), 2) tradeCommiAmount,
+			round(sum(st.canSettleAmount), 2) canSettleAmount,
+			st.commissionPercent
+		FROM
+			settle_tab st
+		WHERE LEFT (st.settleDate, 7) = #{settleMonth}
+		AND st.communityId = #{communityId}
+		GROUP BY
+			LEFT (st.settleDate, 7),
+			st.sellerId,
+			st.communityId
+	</select>
+	
+	<select id="getSellerSettle" resultType="com.yc.edsi.payment.SellerSettlePO">
+		SELECT
+			LEFT (st.settleDate, 7) settleMonth,
+			st.sellerId,
+			st.communityId,
+			sum(st.canSettleNum) canSettleNum,
+			round(
+				sum(st.canSettleTotalAmount),
+				2
+			) canSettleTotalAmount,
+			sum(st.totalTradeNum) totalTradeNum,
+			st.isCommPayee,
+			st.subcomId,
+			round(sum(st.tradeCommiAmount), 2) tradeCommiAmount,
+			round(sum(st.canSettleAmount), 2) canSettleAmount,
+			st.commissionPercent
+		FROM
+			settle_tab st
+		WHERE LEFT (st.settleDate, 7) = #{settleMonth}
+		AND st.sellerId = #{sellerId}
+		AND st.communityId = #{communityId}
+		GROUP BY
+			LEFT (st.settleDate, 7),
+			st.sellerId,
+			st.communityId
+	</select>
+	
+	<select id="getSellerSettleDetail" resultType="com.yc.edsi.payment.SellerPaymentPO">
+		SELECT
+			spt.*
+		FROM
+			seller_payment_tab spt
+		WHERE
+			LEFT (spt.createTime, 7) = #{settleMonth} 
+		AND spt.sellerId = #{sellerId}
+		AND spt.communityId = #{communityId}
+		ORDER BY
+			spt.createTime
+	</select>
+	
+	<select id="getPfApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		SELECT
+			ss.communityId,
+			ss.settleMonth,
+			ss.totalTradeNum ttNum,
+			ss.canSettleNum csNum,
+			ss.canSettleAmount csAmount,
+			ss.canSettleTotalAmount cstAmount,
+			ss.tradeCommiAmount tcAmount,
+			ifnull(ap.advertProfit, 0.00) advertProfit,
+			ss.isCommPayee
+		FROM
+			(
+				SELECT
+					LEFT (st.settleDate, 7) settleMonth,
+					st.communityId,
+					st.subcomId,
+					sum(st.totalTradeNum) totalTradeNum,
+					sum(st.canSettleNum) canSettleNum,
+					round(sum(st.canSettleAmount), 2) canSettleAmount,
+					round(sum(st.canSettleTotalAmount), 2) canSettleTotalAmount,
+					round(sum(st.tradeCommiAmount),2 ) tradeCommiAmount,
+					st.isCommPayee
+				FROM
+					settle_tab st
+				WHERE
+					st.platformApply = '0'
+				AND st.isCommPayee = '1'
+				AND LEFT (st.settleDate, 7) = #{settleMonth}
+				AND st.communityId = #{communityId}
+				GROUP BY
+					st.subcomId,
+					st.communityId,
+					LEFT (st.settleDate, 7)
+			) ss
+		LEFT JOIN (
+			SELECT
+				ai.communityId,
+				ai.subcomId,
+				LEFT (ai.createTime, 7) settleMonth,
+				sum(
+					round(ai.advertAmount, 2) - round(ai.outAmount, 2)
+				) advertProfit
+			FROM
+				advert_income_tab ai
+			WHERE
+				ai.settleApply = '0'
+			AND ai.isCommPayee = '1'
+			AND LEFT (ai.createTime, 7) = #{settleMonth}
+			AND ai.communityId = #{communityId}
+			GROUP BY
+				ai.subcomId,
+				ai.communityId,
+				LEFT (ai.createTime, 7)
+		) ap ON ss.communityId = ap.communityId
+		AND ss.subcomId = ap.subcomId
+		AND ss.settleMonth = ap.settleMonth
+	</select>
+	
+	<select id="getEEPApplySettle" resultType="com.yc.edsi.payment.PlantformUnApply">
+		SELECT
+			ss.communityId,
+			ss.settleMonth,
+			sum(ss.totalTradeNum) ttNum,
+			sum(ss.canSettleNum) csNum,
+			round(sum(ss.canSettleAmount), 2) csAmount,
+			round(
+				sum(ss.canSettleTotalAmount),
+				2
+			) cstAmount,
+			round(sum(ss.tradeCommiAmount), 2) tcAmount,
+			ifnull(ap.advertProfit, 0.00) advertProfit,
+			ss.isCommPayee
+		FROM
+			(
+				SELECT
+					LEFT (st.settleDate, 7) settleMonth,
+					st.*
+				FROM
+					settle_tab st
+				WHERE
+					st.platformApply = '0'
+				AND st.isCommPayee = '0'
+				AND LEFT (st.settleDate, 7) = #{settleMonth}
+				AND st.communityId = #{communityId}
+			) ss
+		LEFT JOIN (
+			SELECT
+				ai.communityId,
+				ai.subcomId,
+				LEFT (ai.createTime, 7) settleMonth,
+				sum(
+					round(ai.advertAmount, 2) - round(ai.outAmount, 2)
+				) advertProfit
+			FROM
+				advert_income_tab ai
+			WHERE
+				ai.settleApply = '0'
+			AND ai.isCommPayee = '0'
+			AND LEFT (ai.createTime, 7) = #{settleMonth}
+			AND ai.communityId = #{communityId}
+			GROUP BY
+				ai.subcomId,
+				ai.communityId,
+				LEFT (ai.createTime, 7)
+		) ap ON ss.communityId = ap.communityId
+		AND ss.subcomId = ap.subcomId
+		AND ss.settleMonth = ap.settleMonth
+		GROUP BY
+			ss.communityId,
+			ss.settleMonth
+	</select>
+    
+    <update id="batchUpdatePfApplyStatus">
+		UPDATE settle_tab st set st.platformApply = '1'
+		WHERE
+			st.platformApply = '0'
+		AND st.isCommPayee = '1'
+		AND LEFT (st.settleDate, 7) = #{settleMonth}
+		AND st.communityId = #{communityId}
+    </update>
+    
+    <update id="batchUpdateEEPApplyStatus">
+		UPDATE settle_tab st set st.platformApply = '1'
+		WHERE
+			st.platformApply = '0'
+		AND st.isCommPayee = '0'
+		AND LEFT (st.settleDate, 7) = #{settleMonth}
+		AND st.communityId = #{communityId}
+    </update>
+    
+	<select id="getPfHandleSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus !='4' 
+	   and ps.isCommPayee = '1'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	   and ps.settleMonth <![CDATA[>=]]> '2015-01'
+	  order by createTime desc 
+	</select>
+    
+	<select id="getPfFinishSettleApply" resultType="com.yc.edsi.payment.PlantformSettlePO">
+	  select * from plantform_settle_tab ps where ps.settleStatus ='4' 
+	   and ps.isCommPayee = '1'
+	  <if test="communityId != null">
+	   and ps.communityId = #{communityId}
+	  </if>
+	  <if test="subcomId != null and subcomId != ''">
+	   and ps.subcomId = #{subcomId}
+	  </if>
+	   and ps.settleMonth <![CDATA[>=]]> '2015-01'
+	   order by createTime desc 
+	</select>
+    
+	<select id="getEEPWaitApplySettleSum" resultType="com.yc.edsi.payment.PlantformUnApply">
+		SELECT
+			sum(ss.totalTradeNum) ttNum,
+			sum(ss.canSettleNum) csNum,
+			round(sum(ss.canSettleAmount), 2) csAmount,
+			round(sum(ss.canSettleTotalAmount), 2) cstAmount,
+			round(sum(ss.tradeCommiAmount),2 ) tcAmount,
+			round(sum(ifnull(ap.advertProfit, 0.00)),2 ) advertProfit
+		FROM
+			(
+				SELECT
+					LEFT(st.settleDate, 7) settleMonth,
+					st.communityId,
+					st.subcomId,
+					sum(st.totalTradeNum) totalTradeNum,
+					sum(st.canSettleNum) canSettleNum,
+					round(sum(st.canSettleAmount), 2) canSettleAmount,
+					round(sum(st.canSettleTotalAmount), 2) canSettleTotalAmount,
+					round(sum(st.tradeCommiAmount),2 ) tradeCommiAmount
+				FROM
+					settle_tab st
+				WHERE
+					st.platformApply = '0'
+				AND st.isCommPayee = '0'
+				AND LEFT(st.settleDate, 7) <![CDATA[<]]> DATE_FORMAT(NOW(), '%Y-%m')
+  		    	<if test="communityId != null and communityId != ''">
+				AND st.communityId = #{communityId}
+		    	</if>
+				GROUP BY
+					st.subcomId,
+					st.communityId,
+					LEFT (st.settleDate, 7)
+			) ss
+		LEFT JOIN (
+			SELECT
+				ai.communityId,
+				ai.subcomId,
+				LEFT (ai.createTime, 7) settleMonth,
+				sum(
+					round(ai.advertAmount, 2) - round(ai.outAmount, 2)
+				) advertProfit
+			FROM
+				advert_income_tab ai
+			WHERE
+				ai.settleApply = '0'
+			AND ai.isCommPayee = '0'
+  		    <if test="communityId != null and communityId != ''">
+			AND ai.communityId = #{communityId}
+		    </if>
+			GROUP BY
+				ai.subcomId,
+				ai.communityId,
+				LEFT (ai.createTime, 7)
+		) ap ON ss.communityId = ap.communityId
+		AND ss.subcomId = ap.subcomId
+		AND ss.settleMonth = ap.settleMonth
+	</select>
+</mapper>

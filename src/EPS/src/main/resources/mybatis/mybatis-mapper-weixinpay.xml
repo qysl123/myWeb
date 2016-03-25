@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yc.eps.weixin.IWeixinPayDao">
+	<insert id="insertTrade" parameterType="com.yc.edsi.payment.third.WeixinPayPO">
+		INSERT INTO weixin_trade_tab(orderId,ownerId,communityId,appid,partnerid,noncestr,sign,
+			resultCode,returnCode,openid,isSubscribe,
+			tradeType,bankType,totalFee,feeType,cashFee,cashFeeType,couponFee,couponCount,
+			transactionId,outTradeNo,attach,timeEnd,payType,clientPayId,ids,mapBody,createTime)
+		VALUES (#{orderId},#{ownerId},#{communityId},#{appId},#{partnerid},#{noncestr},#{sign},
+			#{resultCode},#{returnCode},#{openid},#{isSubscribe},
+			#{tradeType},#{bankType},#{totalFee},#{feeType},#{cashFee},#{cashFeeType},#{couponFee},#{couponCount},
+			#{transactionId},#{outTradeNo},#{attach},#{timeEnd},#{payType},#{clientPayId},#{ids},#{mapBody},#{createTime})
+	</insert>
+	
+	<select id="getFinishTrade" parameterType="String" resultType="int">
+		select count(outTradeNo) from weixin_trade_tab where outTradeNo = #{outTradeNo} and resultCode='SUCCESS'
+	</select>
+	
+</mapper>

@@ -18,7 +18,6 @@ import java.util.TreeMap;
 @Service("dataUsageService")
 public class DataUsageServiceImpl implements DataUsageService {
 
-    //可乐罐API基本url
     @Value("http://liu.gzelian.com/api.aspx?")
     private String BASEURL;
 
@@ -78,7 +77,6 @@ public class DataUsageServiceImpl implements DataUsageService {
             e.printStackTrace();
         }
 
-        System.out.println("result");
         return result;
     }
 }

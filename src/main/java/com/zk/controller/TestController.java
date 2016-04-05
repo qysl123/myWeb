@@ -37,7 +37,7 @@ public class TestController {
     @RequestMapping("/getPackage.do")
     @ResponseBody
     public String getPackage(@RequestParam Map<String, Object> paramMap){
-        System.out.println(dataUsageService.getPackage("scysq", "0"));
+        dataUsageService.getPackage("scysq", "0");
         return "";
     }
 }

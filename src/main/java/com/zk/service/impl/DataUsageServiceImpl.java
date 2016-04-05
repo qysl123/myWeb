@@ -1,10 +1,9 @@
 package com.zk.service.impl;
 
-import com.zk.base.HttpUtil;
-import com.zk.base.Tools;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.zk.base.*;
 import com.zk.service.DataUsageService;
-import net.sf.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -56,13 +55,14 @@ public class DataUsageServiceImpl implements DataUsageService {
                     sb.append("&");
                 }
             }
-            sb.append("key="+SECRETKEY);
+            sb.append("key=" + SECRETKEY);
         }
         return Tools.getMd5(sb.toString());
     }
 
     @Override
     public String getPackage(String account, String type) {
+        getBalance(account);
         String url = BASEURL;
         String result = "";
         Map<String, String> paramMap = new HashMap<>();
@@ -77,7 +77,60 @@ public class DataUsageServiceImpl implements DataUsageService {
             e.printStackTrace();
         }
 
+        DataUsagePackages response = JSON.parseObject(result, DataUsagePackages.class);
+        System.out.println(response);
+        for (DataUsagePackage p : response.getPackages()) {
+            System.out.println(p.toString());
+        }
+
+
+//        chargeDataUsage(account, "13881906371", "");
         return result;
+    }
+
+    public String chargeDataUsage(String account, String moblie, String packge) {
+        String url = BASEURL;
+        String result = "";
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("account", account);
+        paramMap.put("mobile", moblie);
+        paramMap.put("package", packge);
+        try {
+            paramMap.put("sign", getSign(sortMapByKey(paramMap)));
+            paramMap.put("v", "1.1");
+            paramMap.put("action", "charge");
+            paramMap.put("range", "0");
+            paramMap.put("outTradeNo", "LL" + System.currentTimeMillis() + (int) (Math.random() * 100));
+            result = HttpUtil.post(url, paramMap).getBody();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        DataUsageBaseResponse response = JSONObject.parseObject(result, DataUsageBaseResponse.class);
+        System.out.println(response);
+
+        return "";
+    }
+
+    public String getBalance(String account){
+        String url = BASEURL;
+        String result = "";
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("account", account);
+        try {
+            paramMap.put("sign", getSign(sortMapByKey(paramMap)));
+            paramMap.put("v", "1.1");
+            paramMap.put("action", "getBalance");
+            result = HttpUtil.post(url, paramMap).getBody();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println(JSONObject.toJSONString(result));
+        return "";
+    }
+
+    public  String getStatus(){
+
     }
 }
 

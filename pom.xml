@@ -291,6 +291,11 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.aliyun.mns</groupId>
+        <artifactId>aliyun-sdk-mns</artifactId>
+        <version>1.0.5</version>
+      </dependency>
+      <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${logback.version}</version>
@@ -327,6 +332,11 @@
         <version>1.8.0</version>
       </dependency>
       <dependency>
+        <groupId>com.xtb</groupId>
+        <artifactId>sdk</artifactId>
+        <version>1.0.0</version>
+      </dependency>
+      <dependency>
         <groupId>net.sf.json-lib</groupId>
         <artifactId>json-lib</artifactId>
         <version>2.3</version>
@@ -342,7 +352,16 @@
         <artifactId>jackson-core</artifactId>
         <version>${jackson.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>com.chat</groupId>
+        <artifactId>ChatUtil</artifactId>
+        <version>1.0.7</version>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>fastjson</artifactId>
+        <version>1.1.41</version>
+      </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
@@ -394,6 +413,52 @@
         <groupId>commons-httpclient</groupId>
         <artifactId>commons-httpclient</artifactId>
         <version>3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>5.0.0.Alpha1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>dubbo</artifactId>
+        <version>2.5.3</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>spring</artifactId>
+            <groupId>org.springframework</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.4.6</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.sgroschupf</groupId>
+        <artifactId>zkclient</artifactId>
+        <version>0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-jms</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>activemq-core</artifactId>
+        <version>5.7.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>activemq-pool</artifactId>
+        <version>5.8.0</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-pool</groupId>
+        <artifactId>commons-pool</artifactId>
+        <version>1.6</version>
       </dependency>
     </dependencies>
     <reporting>
@@ -470,7 +535,6 @@
         <plugin>
           <artifactId>maven-surefire-report-plugin</artifactId>
         </plugin>
-
       </plugins>
     </reporting>
 </project>

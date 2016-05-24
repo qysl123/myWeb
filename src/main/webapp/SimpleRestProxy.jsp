@@ -25,7 +25,7 @@
 
 <%!
     private String PROXY_REFERER = "http://www.yichengshequ.com:6060/SimpleRestProxy.jsp";
-	private String REST_SERVER_BASE = "https://demo-openapi.wjjr.cc";
+	private String REST_SERVER_BASE = "http://ll.10086gg.cn/Interface/InfcForEC.aspx?";
 
     private byte[] readRequestPostBody(HttpServletRequest request) throws IOException {
         int clength = request.getContentLength();
@@ -109,7 +109,7 @@
         con.setConnectTimeout(5000);
         con.setReadTimeout(60000);
 
-        con.setRequestProperty("Referer", referer);
+//        con.setRequestProperty("Referer", "");
         con.setRequestMethod(method);
 
         if (bytes != null && bytes.length > 0) {

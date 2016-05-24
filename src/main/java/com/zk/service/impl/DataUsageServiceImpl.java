@@ -2,6 +2,7 @@ package com.zk.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.yc.chat.util.JsonUtil;
 import com.zk.base.*;
 import com.zk.service.DataUsageService;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,7 +77,6 @@ public class DataUsageServiceImpl implements DataUsageService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         DataUsagePackages response = JSON.parseObject(result, DataUsagePackages.class);
         System.out.println(response);
         for (DataUsagePackage p : response.getPackages()) {
@@ -127,10 +127,6 @@ public class DataUsageServiceImpl implements DataUsageService {
         }
         System.out.println(JSONObject.toJSONString(result));
         return "";
-    }
-
-    public  String getStatus(){
-
     }
 }
 

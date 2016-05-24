@@ -1,7 +1,6 @@
-package com.zk.service.impl;
+package com.zk.dubbo.service.impl;
 
-import com.alibaba.dubbo.config.annotation.Service;
-import com.zk.service.TestRegistryService;
+import com.zk.dubbo.service.TestRegistryService;
 
 //@Service(version = "0.0.1")
 public class TestRegistryServiceImpl implements TestRegistryService{

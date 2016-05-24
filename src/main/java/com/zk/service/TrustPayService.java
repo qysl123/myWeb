@@ -3,7 +3,6 @@ package com.zk.service;
 import com.zk.common.Tools;
 import com.zk.entity.TrustPayBaseResponse;
 import com.zk.entity.TrustPayPO;
-import net.sf.json.JSON;
 import net.sf.json.JSONObject;
 import org.open.sdk.java.common.enums.OpenSdkSupportHttpMethod;
 import org.open.sdk.java.service.OpenApiSinatureAccessService;

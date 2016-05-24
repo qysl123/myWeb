@@ -30,18 +30,57 @@
             <value>queue</value>
         </constructor-arg>
     </bean>
+
+    <!--这个是sessionAwareQueue目的地-->
+    <bean id="sessionAwareQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg>
+            <value>sessionAwareQueue</value>
+        </constructor-arg>
+    </bean>
     <!--这个是主题目的地，一对多的-->
     <!--<bean id="topicDestination" class="org.apache.activemq.command.ActiveMQTopic">-->
     <!--<constructor-arg value="topic"/>-->
     <!--</bean>-->
 
     <!-- 消息监听器 -->
-    <bean id="consumerMessageListener" class="com.zk.common.ConsumerMessageListener"/>
+    <bean id="consumerMessageListener" class="com.zk.activitymq.common.ConsumerMessageListener"/>
+
+    <bean id="sessionAwareListenerContainer"
+          class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="destination" ref="sessionAwareQueue" />
+        <property name="messageListener" ref="consumerSessionAwareMessageListener" />
+    </bean>
+
+    <bean id="consumerSessionAwareMessageListener" class="com.zk.activitymq.common.ConsumerSessionAwareMessageListener">
+        <property name="destination" ref="queueDestination"/>
+    </bean>
 
     <!-- 消息监听容器 -->
     <bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
         <property name="connectionFactory" ref="connectionFactory"/>
         <property name="destination" ref="queueDestination"/>
         <property name="messageListener" ref="consumerMessageListener"/>
+    </bean>
+
+    <!-- 消息监听适配器 -->
+    <bean id="messageListenerAdapter" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">
+        <constructor-arg>
+            <bean class="com.zk.activitymq.common.ConsumerListener"/>
+        </constructor-arg>
+    </bean>
+
+    <!-- 消息监听适配器对应的监听容器 -->
+    <bean id="messageListenerAdapterContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="connectionFactory"/>
+        <property name="destination" ref="adapterQueue"/>
+        <property name="messageListener" ref="messageListenerAdapter"/><!-- 使用MessageListenerAdapter来作为消息监听器 -->
+    </bean>
+
+    <!-- 用于测试消息监听适配器的队列目的地 -->
+    <bean id="adapterQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg>
+            <value>adapterQueue</value>
+        </constructor-arg>
     </bean>
 </beans>

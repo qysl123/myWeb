@@ -1,6 +1,6 @@
-package com.zk.service.impl;
+package com.zk.activitymq.service.impl;
 
-import com.zk.service.ProducerService;
+import com.zk.activitymq.service.ProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessageCreator;

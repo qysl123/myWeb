@@ -1,4 +1,4 @@
-package com.zk.common;
+package com.zk.activitymq.common;
 
 import org.springframework.stereotype.Component;
 

@@ -1,19 +1,11 @@
 package com.zk.base;
 
-import com.alibaba.fastjson.JSONObject;
-import com.zk.entity.CashDeskResponse;
-import com.zk.entity.TrustPayBaseResponse;
-
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class Test {
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
 
         System.out.println("ZXH" + System.currentTimeMillis() + 100000000L);
         /*List<Money> cardsList = new ArrayList<>();
@@ -41,22 +33,22 @@ public class Test {
         }*/
     }
 
-    private static List<Money> cal(List<Money> cardsList, long amount, long total){
+    private static List<Money> cal(List<Money> cardsList, long amount, long total) {
         List<Money> resultList = new ArrayList<>();
         Money po;
-        for(int i = 0; i < cardsList.size(); i++){
+        for (int i = 0; i < cardsList.size(); i++) {
             po = cardsList.get(i);
-            if(po.getCount() <= 0 || total+po.getAmount() > amount){
+            if (po.getCount() <= 0 || total + po.getAmount() > amount) {
                 continue;
             }
             resultList.add(po);
             po.setCount(po.getCount() - 1);
-            if(total+po.getAmount() == amount){
+            if (total + po.getAmount() == amount) {
                 return resultList;
             }
             total += po.getAmount();
             List<Money> list = cal(cardsList, amount, total);
-            if(list != null){
+            if (list != null) {
                 resultList.addAll(list);
                 return resultList;
             }

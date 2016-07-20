@@ -6,9 +6,8 @@
 		http://www.springframework.org/schema/aop
 		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd">
 
-	<aop:aspectj-autoproxy />
 
 	<import resource="spring-redis.xml"/>
 	<import resource="spring-mybatis.xml" />
-	<import resource="spring-jms.xml" />
+	<!--<import resource="spring-jms.xml" />-->
 </beans>

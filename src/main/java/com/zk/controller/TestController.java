@@ -1,14 +1,15 @@
 package com.zk.controller;
 
 import com.zk.base.DataChargeNotifyResponse;
+import com.zk.entity.DateTestVO;
 import com.zk.service.TestService;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
+import java.util.Date;
 import java.util.Map;
 
 @Controller
@@ -29,8 +30,17 @@ public class TestController {
         return "";
     }
 
+    @RequestMapping(value = "/test.do")
+    @ResponseBody
+    public Object test(@RequestBody DateTestVO dateTestVO){
+        System.out.println(dateTestVO);
+        return dateTestVO;
+    }
 
-    public static void main(String[] args){
-        System.out.println(URLEncoder.encode("http://m.qqxmall.com/product.do?pid=212"));
+    @RequestMapping(value = "/test2.do")
+    @ResponseBody
+    public Object test2(@ModelAttribute DateTestVO dateTestVO){
+        System.out.println(dateTestVO);
+        return dateTestVO;
     }
 }

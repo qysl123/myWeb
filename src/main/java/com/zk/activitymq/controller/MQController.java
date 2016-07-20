@@ -13,36 +13,36 @@ import javax.jms.Destination;
 @Controller
 public class MQController {
 
-    @Resource
-    private ProducerService producerService;
-
-    @Autowired
-    @Qualifier("queueDestination")
-    private Destination destination;
-
-    @Autowired
-    @Qualifier("sessionAwareQueue")
-    private Destination sessionAwareQueue;
-
-    @Autowired
-    @Qualifier("adapterQueue")
-    private Destination adapterQueue;
-
-    @RequestMapping("/mq")
-    public String mq(Model model){
-        producerService.sendMessage(destination, "hello mq");
-        return "";
-    }
-
-    @RequestMapping("/mq2")
-    public String mq2(Model model){
-        producerService.sendMessage(sessionAwareQueue, "测试SessionAwareMessageListener");
-        return "";
-    }
-
-    @RequestMapping("/mq3")
-    public String mq3(Model model){
-        producerService.sendMessage(adapterQueue, "测试messageListenerAdapter");
-        return "";
-    }
+//    @Resource
+//    private ProducerService producerService;
+//
+//    @Autowired
+//    @Qualifier("queueDestination")
+//    private Destination destination;
+//
+//    @Autowired
+//    @Qualifier("sessionAwareQueue")
+//    private Destination sessionAwareQueue;
+//
+//    @Autowired
+//    @Qualifier("adapterQueue")
+//    private Destination adapterQueue;
+//
+//    @RequestMapping("/mq")
+//    public String mq(Model model){
+//        producerService.sendMessage(destination, "hello mq");
+//        return "";
+//    }
+//
+//    @RequestMapping("/mq2")
+//    public String mq2(Model model){
+//        producerService.sendMessage(sessionAwareQueue, "测试SessionAwareMessageListener");
+//        return "";
+//    }
+//
+//    @RequestMapping("/mq3")
+//    public String mq3(Model model){
+//        producerService.sendMessage(adapterQueue, "测试messageListenerAdapter");
+//        return "";
+//    }
 }

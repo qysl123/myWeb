@@ -14,7 +14,7 @@ import javax.jms.Session;
 @Service
 public class ProducerServiceImpl implements ProducerService {
 
-    @Autowired
+//    @Autowired
     private JmsTemplate jmsTemplate;
 
     @Override

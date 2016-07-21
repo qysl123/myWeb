@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:p="http://www.springframework.org/schema/p" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	   xmlns:aop="http://www.springframework.org/schema/aop" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/mvc  
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+	<context:component-scan base-package="com.zk" />
+	<aop:aspectj-autoproxy />
+
+	<bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+		<property name="converters">
+			<list>
+				<bean class="com.zk.common.StringToDateConverter" />
+				<bean class="com.zk.common.StringToLong" />
+				<bean class="com.zk.common.StringToEnumConverterFactory" />
+			</list>
+		</property>
+	</bean>
+
+	<bean id="fastJsonConfig" class="com.alibaba.fastjson.support.config.FastJsonConfig">
+		<!-- Default charset -->
+		<property name="charset" value="UTF-8"/>
+		<!-- Default dateFormat -->
+		<property name="dateFormat" value="yyyy-MM-dd HH:mm:ss"/>
+		<!--&lt;!&ndash; Feature &ndash;&gt;-->
+		<!--<property name="features">-->
+		<!--<list>-->
+			<!--<value></value>-->
+		<!--</list>-->
+		<!--</property>-->
+		<!--&lt;!&ndash; SerializerFeature &ndash;&gt;-->
+		<property name="serializerFeatures">
+		<list>
+		<value>WriteEnumUsingToString</value>
+		</list>
+		</property>
+		<!--&lt;!&ndash; Global SerializeFilter &ndash;&gt;-->
+		<!--<property name="serializeFilters">-->
+		<!--<list>-->
+		<!--<ref bean="Your serializer filter"/>-->
+		<!--</list>-->
+		<!--</property>-->
+		<!--&lt;!&ndash; Class Level SerializeFilter &ndash;&gt;-->
+		<!--<property name="classSerializeFilters">-->
+		<!--<map>-->
+		<!--<entry key="Your filter class" value-ref="Your serializer filter"/>-->
+		<!--</map>-->
+		<!--</property>-->
+	</bean>
+
+	<!-- 自动启动Spring MVC的注解功能 -->
+	<mvc:annotation-driven conversion-service="conversionService">
+		<mvc:message-converters>
+			<bean class="com.zk.common.CustomFastJsonConverter">
+				<!-- MediaTypes -->
+				<property name="supportedMediaTypes">
+					<list>
+						<value>application/json</value>
+					</list>
+				</property>
+				<!-- FastJsonConfig -->
+				<property name="fastJsonConfig" ref="fastJsonConfig" />
+			</bean>
+			<!--RequestMapping解析器-->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<constructor-arg value="UTF-8" index="0"/>
+				<!--避免出现乱码 -->
+				<property name="supportedMediaTypes">
+					<list>
+						<value>text/plain;charset=UTF-8</value>
+						<value>application/json;charset=UTF-8</value>
+					</list>
+				</property>
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+
+	<!-- 静态文件访问 -->
+	<mvc:resources mapping="/js/**"  location="/js/" />
+	<mvc:resources mapping="/bootstrap/**"  location="/bootstrap/"/>
+
+	<!-- 对模型视图名称的解析，即在模型视图名称添加前后缀 -->
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" p:prefix="/page/" p:suffix=".jsp" />
+
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding">
+			<value>UTF-8</value>
+		</property>
+		<property name="maxUploadSize">
+			<value>104857600</value><!-- 上传文件大小限制为100M，100*1024*1024 -->
+		</property>
+		<property name="maxInMemorySize">
+			<value>4096</value>
+		</property>
+	</bean>
+	<!-- 使用cookie切换locale ，如果没有在cookie指定语言，就使用浏览器的语言-->
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+		<property name="cookieName" value="clientlanguage"/><!-- 指定语言cookie的名字 -->
+		<!-- in seconds. If set to -1, the cookie is not persisted (deleted when browser shuts down) -->
+		<property name="cookieMaxAge" value="100000" />
+	</bean>
+
+	<!--<dubbo:annotation package="com.zk"/>-->
+	<!--提供方应用名称信息，这个相当于起一个名字，我们dubbo管理页面比较清晰是哪个应用暴露出来的-->
+	<!--<dubbo:application name="dubbo_provider"></dubbo:application>-->
+	<!-- 使用zookeeper注册中心暴露服务地址 -->
+	<!--<dubbo:registry address="zookeeper://192.168.0.172:2181" check="false" subscribe="false" register=""></dubbo:registry>-->
+	<!--要暴露的服务接口 -->
+
+	<!--<dubbo:application name="dubbo_consumer"></dubbo:application>-->
+	<!-- 使用zookeeper注册中心暴露服务地址 -->
+	<!--<dubbo:registry address="zookeeper://192.168.0.172:2181" check="false"></dubbo:registry>-->
+	<!-- 要引用的服务 -->
+</beans>

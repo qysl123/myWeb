@@ -1,9 +1,8 @@
 package com.zk.redis.dao.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.zk.entity.TestVO;
 import com.zk.redis.dao.RedisDao;
-import net.sf.json.JSONObject;
-import org.codehaus.jackson.map.util.JSONPObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -12,15 +11,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Repository
 public class RedisDaoimpl implements RedisDao {
 
-    @Autowired
+//    @Autowired
     protected RedisTemplate<Serializable, Serializable> redisTemplate;
 
     @Override
@@ -29,7 +24,7 @@ public class RedisDaoimpl implements RedisDao {
             @Override
             public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
                 redisConnection.set(redisTemplate.getStringSerializer().serialize(testVO.getId()),
-                        redisTemplate.getStringSerializer().serialize(JSONObject.fromObject(testVO).toString()));
+                        redisTemplate.getStringSerializer().serialize(JSONObject.toJSONString(testVO)));
                 return null;
             }
         });
@@ -44,7 +39,7 @@ public class RedisDaoimpl implements RedisDao {
                 TestVO vo = null;
                 if (connection.exists(bb)) {
                     String str = redisTemplate.getStringSerializer().deserialize(connection.get(bb));
-                    vo = (TestVO) JSONObject.toBean(JSONObject.fromObject(str), TestVO.class);
+                    vo = JSONObject.parseObject(str, TestVO.class);
                 }
                 return vo;
             }

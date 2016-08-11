@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.zk.enums.BaseEnum;
 import org.springframework.stereotype.Component;
@@ -15,7 +14,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- *
  * Created by Ken on 2016/7/18.
  */
 @Component("customObjectMapper")
@@ -29,9 +27,19 @@ public class CustomObjectMapper extends ObjectMapper {
         module.addSerializer(BaseEnum.class, new ItemSerializer());
         module.addDeserializer(Date.class, new DateDeserializer());
         this.registerModule(module);
+        this.getSerializerProvider().setNullValueSerializer(new JsonSerializer<Object>() {
+
+            @Override
+            public void serialize(
+                    Object value,
+                    JsonGenerator jg,
+                    SerializerProvider sp) throws IOException {
+                jg.writeString("");
+            }
+        });
     }
 
-    class DateDeserializer extends JsonDeserializer<Date>{
+    class DateDeserializer extends JsonDeserializer<Date> {
 
         @Override
         public Date deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
@@ -52,6 +60,7 @@ public class CustomObjectMapper extends ObjectMapper {
             gen.writeString(sdf.format(value));
         }
     }
+
     class ItemSerializer extends JsonSerializer<BaseEnum> {
 
         @Override

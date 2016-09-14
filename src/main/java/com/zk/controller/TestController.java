@@ -32,9 +32,9 @@ public class TestController {
 
     @RequestMapping(value = "/test.do")
     @ResponseBody
-    public Object test(@RequestBody DateTestVO dateTestVO){
-        System.out.println(dateTestVO);
-        return dateTestVO;
+    public Object test(@RequestBody String id){
+        System.out.println(id);
+        return id;
     }
 
     @RequestMapping(value = "/test2.do")

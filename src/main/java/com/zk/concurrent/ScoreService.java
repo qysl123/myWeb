@@ -43,7 +43,6 @@ public class ScoreService {
             });
         }
 
-
         try {
             for (Long accountId : accountList) {
                 Future<ScoreResponseDTO> f = completionService.take();
